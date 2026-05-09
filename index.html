@@ -1,0 +1,1198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>1D Thermal Diffusion Simulator — Asad Mirza</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@300;400;500&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body class="light-mode">
+
+<!-- ── Site Nav ─────────────────────────────────────────── -->
+<div class="site-nav">
+  <a class="site-nav-logo" href="https://dthornz.github.io/website-cv-tools/">A.Mirza <span>/</span> site</a>
+  <a class="site-nav-link" href="https://dthornz.github.io/website-cv-tools/">Home</a>
+  <a class="site-nav-link" href="https://dthornz.github.io/website-cv-tools/AsadMirza_CV.html">CV</a>
+  <div class="nav-dropdown">
+    <a class="site-nav-link curr" href="https://dthornz.github.io/website-cv-tools/projects.html">Projects ▾</a>
+    <div class="nav-dropdown-menu">
+      <a class="nav-dropdown-item" href="https://dthornz.github.io/hodgkin-huxley/">🧠 HH Neuron Model</a>
+      <a class="nav-dropdown-item" href="https://dthornz.github.io/maxwell-boltzmann/">⚛ MB Gas Simulator</a>
+      <a class="nav-dropdown-item" href="https://dthornz.github.io/lbm-cfd/">🌊 LBM CFD Simulator</a>
+      <a class="nav-dropdown-item" href="https://dthornz.github.io/eng-fea-cfd-calc/">⚙ Eng / FEA / CFD Calc</a>
+      <a class="nav-dropdown-item" style="color:var(--teal);font-weight:600" href="#">🔥 1D Thermal Diffusion</a>
+      <a class="nav-dropdown-item" href="https://dthornz.github.io/website-cv-tools/dissertation.html">📋 PhD Dissertation</a>
+      <a class="nav-dropdown-item" href="https://dthornz.github.io/academic-ref-validator/">📑 Reference Validator</a>
+    </div>
+  </div>
+</div>
+
+<div class="page-wrap">
+
+<!-- ── Hero ─────────────────────────────────────────────── -->
+<div class="hero">
+  <div class="hero-kicker">Interactive Computational Heat Transfer</div>
+  <h1 class="hero-title">1D Thermal Diffusion<br>Simulator</h1>
+  <p class="hero-sub">A fully interactive finite-difference solver for the one-dimensional heat equation — supporting Cartesian, cylindrical, and spherical coordinates with Dirichlet and Neumann boundary conditions, real-time visualization, and analytical steady-state overlay.</p>
+  <div class="hero-pills">
+    <span class="pill">Cartesian · Cylindrical · Spherical</span>
+    <span class="pill">Dirichlet &amp; Neumann BCs</span>
+    <span class="pill">Explicit FD Solver</span>
+    <span class="pill">Von Neumann Stability</span>
+    <span class="pill">Steady-State Overlay</span>
+    <span class="pill">Thomas Algorithm</span>
+  </div>
+  <div class="hero-meta">
+    <div><div class="hero-stat-num">1822</div><div class="hero-stat-label">Fourier's Theory</div></div>
+    <div><div class="hero-stat-num">3</div><div class="hero-stat-label">Coordinate Systems</div></div>
+    <div><div class="hero-stat-num">2nd</div><div class="hero-stat-label">Order Spatial Accuracy</div></div>
+    <div><div class="hero-stat-num">O(n)</div><div class="hero-stat-label">Steady-State Solver</div></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     §1  BACKGROUND
+══════════════════════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-num">§ 1</div>
+  <h2 class="section-title">Background: Fourier and the Theory of Heat</h2>
+  <div class="section-body">
+    <p>In 1807, <strong>Jean-Baptiste Joseph Fourier</strong> submitted a manuscript to the French Academy of Sciences presenting a revolutionary mathematical treatment of heat conduction. Rejected initially — Lagrange, Laplace, and Legendre doubted the convergence of his trigonometric series — it was finally published in 1822 as the landmark <em>Théorie analytique de la chaleur</em> (Analytical Theory of Heat).<sup>[1]</sup> Fourier's central insight was that any temperature distribution, however irregular, could be decomposed into a sum of sinusoidal modes — a concept now foundational to all of mathematical physics.</p>
+    <p>The physical premise is <strong>Fourier's law of heat conduction</strong>: the heat flux through a material is proportional to the local temperature gradient, directed from hot to cold. For an isotropic material this is expressed as a vector relation,</p>
+
+    <div class="eq-block">
+      <div class="eq-row">
+        <span class="eq-label">Fourier's Law:</span>
+        <span class="eq-main"><strong>q</strong> = −k ∇T</span>
+        <span class="eq-comment">W m⁻²</span>
+      </div>
+      <div class="eq-note">where <strong>q</strong> is the heat flux vector (W m⁻²), k is the thermal conductivity (W m⁻¹ K⁻¹), and ∇T is the temperature gradient (K m⁻¹). The negative sign reflects that heat flows against the gradient — from high to low temperature.</div>
+    </div>
+
+    <p>Combining Fourier's law with conservation of energy in a control volume yields the <strong>heat equation</strong> — a parabolic partial differential equation that governs the evolution of temperature in time and space. This equation underpins an enormous range of engineering and scientific disciplines: thermal management of microelectronics, cryopreservation of biological tissue, heat treatment of metals, modeling of geothermal gradients, and the design of spacecraft thermal protection systems.</p>
+    <p>This simulator solves the one-dimensional heat equation numerically using an explicit finite-difference scheme, allowing real-time exploration of how geometry (coordinate system), material properties, and boundary conditions shape the transient and steady-state temperature distribution.</p>
+  </div>
+
+  <div class="callout">
+    <div class="callout-title">Historical Note</div>
+    Fourier's series expansion — expressing an arbitrary function as an infinite sum of sines and cosines — was initially controversial because it appeared to violate the prevailing assumption that only "analytic" functions could arise in physics. It took decades for the convergence theory to be rigorously established, eventually leading to Dirichlet's and Riemann's contributions to real analysis.
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     §2  MATHEMATICAL FORMULATION
+══════════════════════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-num">§ 2</div>
+  <h2 class="section-title">Mathematical Formulation</h2>
+  <div class="section-body">
+
+    <p>Starting from the first law of thermodynamics applied to a differential control volume, the rate of change of internal energy equals the net rate of heat conduction into the element (assuming no internal heat generation and constant properties):</p>
+
+    <div class="eq-block">
+      <div class="eq-row">
+        <span class="eq-label">General Form:</span>
+        <span class="eq-main">ρ c<sub>p</sub> ∂T/∂t = ∇ · (k ∇T)</span>
+      </div>
+      <div class="eq-sep"></div>
+      <div class="eq-row">
+        <span class="eq-label">Simplified (k const):</span>
+        <span class="eq-main">∂T/∂t = α ∇²T</span>
+        <span class="eq-comment">α = k / (ρ c<sub>p</sub>)</span>
+      </div>
+      <div class="eq-note">where ρ (kg m⁻³) is density, c<sub>p</sub> (J kg⁻¹ K⁻¹) is specific heat capacity, and α (m² s⁻¹) is the <strong>thermal diffusivity</strong> — the ratio of a material's ability to conduct heat to its ability to store it.</div>
+    </div>
+
+    <p>For one-dimensional problems, the Laplacian ∇²T takes different forms depending on the coordinate system. Each geometry arises naturally in physical problems:</p>
+
+    <div class="eq-block">
+      <div class="eq-row">
+        <span class="eq-label">Cartesian (x):</span>
+        <span class="eq-main">∂T/∂t = α ∂²T/∂x²</span>
+        <span class="eq-comment">plane wall, slab</span>
+      </div>
+      <div class="eq-sep"></div>
+      <div class="eq-row">
+        <span class="eq-label">Cylindrical (r):</span>
+        <span class="eq-main">∂T/∂t = (α/r) ∂/∂r (r ∂T/∂r)</span>
+        <span class="eq-comment">long rod, pipe wall</span>
+      </div>
+      <div class="eq-row" style="padding-left:80px;font-size:.9em">
+        <span class="eq-main" style="color:var(--dim)">= α (∂²T/∂r² + (1/r) ∂T/∂r)</span>
+      </div>
+      <div class="eq-sep"></div>
+      <div class="eq-row">
+        <span class="eq-label">Spherical (r):</span>
+        <span class="eq-main">∂T/∂t = (α/r²) ∂/∂r (r² ∂T/∂r)</span>
+        <span class="eq-comment">sphere, droplet</span>
+      </div>
+      <div class="eq-row" style="padding-left:80px;font-size:.9em">
+        <span class="eq-main" style="color:var(--dim)">= α (∂²T/∂r² + (2/r) ∂T/∂r)</span>
+      </div>
+      <div class="eq-note">The cylindrical and spherical forms are radial (r: 0 → R), appropriate when there is angular symmetry. The extra 1/r and 2/r terms account for the diverging cross-sectional area in each geometry. Cylindrical axial transport (along z) reduces to the Cartesian equation.</div>
+    </div>
+
+    <p><strong>Steady-state forms.</strong> When ∂T/∂t = 0, each equation reduces to an ODE. In Cartesian geometry the steady-state profile is simply linear. In cylindrical geometry it is logarithmic (T ∝ ln r + C), and in spherical geometry it is hyperbolic (T ∝ −1/r + C). These analytical solutions serve as exact benchmarks for validating the numerical solver.</p>
+
+    <p><strong>Boundary conditions.</strong> The heat equation is a second-order PDE and requires one condition at each spatial boundary. Two physical types are supported:</p>
+
+    <div class="eq-block">
+      <div class="eq-row">
+        <span class="eq-label">Dirichlet:</span>
+        <span class="eq-main">T|<sub>Γ</sub> = T<sub>prescribed</sub></span>
+        <span class="eq-comment">fixed temperature (K)</span>
+      </div>
+      <div class="eq-sep"></div>
+      <div class="eq-row">
+        <span class="eq-label">Neumann:</span>
+        <span class="eq-main">−k (∂T/∂n)|<sub>Γ</sub> = q<sub>prescribed</sub></span>
+        <span class="eq-comment">fixed heat flux (W m⁻²)</span>
+      </div>
+      <div class="eq-note">n denotes the outward unit normal. A Neumann value of q = 0 describes a perfectly insulated (adiabatic) surface. For radial geometries (cylindrical/radial, spherical), the inner boundary at r = 0 must be Neumann with q = 0 to enforce the physical symmetry condition ∂T/∂r|<sub>r=0</sub> = 0.</div>
+    </div>
+
+    <table class="param-table" style="margin-top:24px">
+      <thead><tr><th>Symbol</th><th>Value (default)</th><th>Unit</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td>α</td><td>1.0 × 10⁻⁴</td><td>m² s⁻¹</td><td>Thermal diffusivity (directly specified or computed as k / ρc<sub>p</sub>)</td></tr>
+        <tr><td>k</td><td>200</td><td>W m⁻¹ K⁻¹</td><td>Thermal conductivity (aluminium ≈ 205, steel ≈ 50, PDMS ≈ 0.15)</td></tr>
+        <tr><td>ρ</td><td>8000</td><td>kg m⁻³</td><td>Mass density</td></tr>
+        <tr><td>c<sub>p</sub></td><td>500</td><td>J kg⁻¹ K⁻¹</td><td>Specific heat capacity at constant pressure</td></tr>
+        <tr><td>L</td><td>0.1</td><td>m</td><td>Domain length (or outer radius R for radial cases)</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     §3  NUMERICAL METHOD
+══════════════════════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-num">§ 3</div>
+  <h2 class="section-title">Numerical Method</h2>
+  <div class="section-body">
+
+    <p>The simulator uses an <strong>explicit forward-Euler in time / central-difference in space</strong> finite-difference scheme. The spatial domain [0, L] is discretised into N equally spaced nodes with grid spacing Δx = L/(N−1). Time is advanced in steps of Δt.</p>
+
+    <p><strong>Discretisation — Cartesian.</strong> Applying a first-order forward difference in time and second-order central differences in space to ∂T/∂t = α ∂²T/∂x² gives:</p>
+
+    <div class="eq-block">
+      <div class="eq-row">
+        <span class="eq-label">Interior update:</span>
+        <span class="eq-main">T<sub>i</sub><sup>n+1</sup> = T<sub>i</sub><sup>n</sup> + r (T<sub>i+1</sub><sup>n</sup> − 2T<sub>i</sub><sup>n</sup> + T<sub>i−1</sub><sup>n</sup>)</span>
+      </div>
+      <div class="eq-row">
+        <span class="eq-label">Mesh ratio:</span>
+        <span class="eq-main">r = α Δt / Δx²</span>
+        <span class="eq-comment">dimensionless</span>
+      </div>
+      <div class="eq-note">The superscript n denotes the current time level; i is the spatial index. The scheme is explicit — the new value at each node is computed entirely from known values at the previous time step, requiring no linear system solve for each time step.</div>
+    </div>
+
+    <p><strong>Cylindrical and spherical coordinates.</strong> Expanding the divergence form of the radial equations and applying central differences to both the second-derivative and first-derivative (curvature) terms:</p>
+
+    <div class="eq-block">
+      <div class="eq-row">
+        <span class="eq-label">Cylindrical:</span>
+        <span class="eq-main">T<sub>i</sub><sup>n+1</sup> = T<sub>i</sub><sup>n</sup> + r (T<sub>i+1</sub> − 2T<sub>i</sub> + T<sub>i−1</sub>) + (α Δt / r<sub>i</sub>) · (T<sub>i+1</sub> − T<sub>i−1</sub>) / (2Δx)</span>
+      </div>
+      <div class="eq-sep"></div>
+      <div class="eq-row">
+        <span class="eq-label">Spherical:</span>
+        <span class="eq-main">T<sub>i</sub><sup>n+1</sup> = T<sub>i</sub><sup>n</sup> + r (T<sub>i+1</sub> − 2T<sub>i</sub> + T<sub>i−1</sub>) + (2α Δt / r<sub>i</sub>) · (T<sub>i+1</sub> − T<sub>i−1</sub>) / (2Δx)</span>
+      </div>
+      <div class="eq-note">Here r<sub>i</sub> = i · Δx is the radial position of node i. The additional 1/r term (cylindrical) or 2/r term (spherical) represents the geometric curvature of the coordinate system. At r = 0, L'Hôpital's rule gives the limiting forms shown below.</div>
+    </div>
+
+    <p><strong>Origin treatment (r = 0).</strong> The 1/r<sub>i</sub> terms are singular at i = 0. Applying L'Hôpital's rule and the symmetry condition ∂T/∂r|<sub>r=0</sub> = 0 (equivalently, a ghost-point value T<sub>−1</sub> = T<sub>1</sub>) yields:</p>
+
+    <div class="eq-block">
+      <div class="eq-row">
+        <span class="eq-label">Cylindrical, r=0:</span>
+        <span class="eq-main">T<sub>0</sub><sup>n+1</sup> = T<sub>0</sub><sup>n</sup> + 4r (T<sub>1</sub><sup>n</sup> − T<sub>0</sub><sup>n</sup>)</span>
+        <span class="eq-comment">factor of 4</span>
+      </div>
+      <div class="eq-row">
+        <span class="eq-label">Spherical, r=0:</span>
+        <span class="eq-main">T<sub>0</sub><sup>n+1</sup> = T<sub>0</sub><sup>n</sup> + 6r (T<sub>1</sub><sup>n</sup> − T<sub>0</sub><sup>n</sup>)</span>
+        <span class="eq-comment">factor of 6</span>
+      </div>
+      <div class="eq-note">These limiting coefficients (4 for cylindrical, 6 for spherical) arise from the dimensionality of the Laplacian at the origin: lim<sub>r→0</sub> (1/rᵈ⁻¹) d/dr(rᵈ⁻¹ dT/dr) = d · d²T/dr² in d spatial dimensions.</div>
+    </div>
+
+    <p><strong>Neumann boundary conditions — ghost-point method.</strong> For a Neumann BC −k(∂T/∂n)|<sub>Γ</sub> = q at a boundary node, a fictitious ghost node is introduced one grid spacing beyond the boundary. The derivative condition fixes the ghost value, which is substituted into the interior stencil applied at the boundary node:</p>
+
+    <div class="eq-block">
+      <div class="eq-row">
+        <span class="eq-label">Left (x=0), ghost:</span>
+        <span class="eq-main">T<sub>−1</sub> = T<sub>1</sub> + 2Δx · q<sub>L</sub>/k</span>
+        <span class="eq-comment">q<sub>L</sub> > 0 → heat in</span>
+      </div>
+      <div class="eq-row">
+        <span class="eq-label">Right (x=L), ghost:</span>
+        <span class="eq-main">T<sub>N</sub> = T<sub>N−2</sub> − 2Δx · q<sub>R</sub>/k</span>
+        <span class="eq-comment">q<sub>R</sub> > 0 → heat out</span>
+      </div>
+      <div class="eq-note">Substituting the ghost values into the standard second-order stencil gives a second-order-accurate Neumann update at the boundary — no first-order one-sided differences are needed.</div>
+    </div>
+
+    <p><strong>Von Neumann stability analysis.</strong> The explicit scheme is conditionally stable. Substituting a Fourier mode T<sub>i</sub><sup>n</sup> = ξ<sup>n</sup> e<sup>ikᵢ Δx</sup> into the update equation and requiring the amplification factor |ξ| ≤ 1 yields:</p>
+
+    <div class="eq-block">
+      <div class="eq-row">
+        <span class="eq-label">Cartesian / Cyl. axial:</span>
+        <span class="eq-main">Δt ≤ Δx² / (2α)</span>
+        <span class="eq-comment">r ≤ 0.5</span>
+      </div>
+      <div class="eq-row">
+        <span class="eq-label">Cylindrical radial:</span>
+        <span class="eq-main">Δt ≤ Δx² / (4α)</span>
+        <span class="eq-comment">r ≤ 0.25, limited by r=0 node</span>
+      </div>
+      <div class="eq-row">
+        <span class="eq-label">Spherical:</span>
+        <span class="eq-main">Δt ≤ Δx² / (6α)</span>
+        <span class="eq-comment">r ≤ 1/6, limited by r=0 node</span>
+      </div>
+      <div class="eq-note">The more restrictive limits for radial geometries arise from the larger coefficients at the r = 0 origin node (factor 4 and 6 vs. 2 in Cartesian). The simulator automatically enforces these limits and warns when the requested Δt exceeds the maximum stable value.</div>
+    </div>
+
+    <p><strong>Steady-state solver — Thomas algorithm.</strong> Setting ∂T/∂t = 0 converts the PDE to a system of linear algebraic equations with a tridiagonal coefficient matrix. This is solved exactly in O(N) operations using the Thomas algorithm (tridiagonal matrix algorithm), providing the analytical steady-state solution as an overlay on the transient simulation. In Cartesian geometry the steady state is a linear profile; in cylindrical geometry it is logarithmic; in spherical geometry it is of the form T = A − B/r.</p>
+  </div>
+
+  <div class="callout callout-amber">
+    <div class="callout-title">Stability Note</div>
+    The explicit scheme requires r ≤ r<sub>max</sub> for numerical stability. If the requested Δt exceeds the maximum stable value, the simulator automatically caps Δt at 99.9% of the stability limit. A badge in the status bar indicates whether the simulation is running at the requested or a reduced time step.
+  </div>
+</div>
+
+<div class="section-divider"></div>
+
+<!-- ══════════════════════════════════════════════════════════
+     §4  SIMULATOR
+══════════════════════════════════════════════════════════ -->
+<div class="section" id="simulator">
+  <div class="section-num">§ 4</div>
+  <h2 class="section-title">Interactive Simulator</h2>
+</div>
+
+<div class="sim-section">
+  <div class="sim-header">
+    <div>
+      <div class="sim-title">1D Heat Equation Solver</div>
+      <div class="sim-subtitle">Explicit finite-difference — real-time temperature profile</div>
+    </div>
+    <div class="sim-status" id="simStatusChip">
+      <span class="dot stopped" id="statusDot"></span>
+      <span id="statusLabel">Idle</span>
+    </div>
+  </div>
+
+  <div class="sim-body">
+    <!-- ── Controls ── -->
+    <div class="sim-controls">
+
+      <!-- Coordinate System -->
+      <div class="ctrl-group">
+        <div class="ctrl-group-label">Coordinate System</div>
+        <div class="ctrl-row">
+          <select class="ctrl-select" id="coordSystem" style="flex:1" title="Select coordinate geometry">
+            <option value="cartesian">Cartesian (x)</option>
+            <option value="cylindrical">Cylindrical</option>
+            <option value="spherical">Spherical (r)</option>
+          </select>
+        </div>
+        <div class="ctrl-row" id="cylModeRow" style="display:none">
+          <span class="ctrl-label-txt">Mode</span>
+          <select class="ctrl-select" id="cylindricalMode" style="flex:1">
+            <option value="radial">Radial (r)</option>
+            <option value="axial">Axial (z)</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Domain & Grid -->
+      <div class="ctrl-group">
+        <div class="ctrl-group-label">Domain &amp; Grid</div>
+        <div class="ctrl-row">
+          <span class="ctrl-label-txt">Length</span>
+          <input type="number" class="ctrl-num" id="domainLength" value="0.1" step="0.01" min="0.001" max="10">
+          <span class="ctrl-unit">m</span>
+        </div>
+        <div class="ctrl-row">
+          <span class="ctrl-label-txt">Grid points</span>
+          <input type="number" class="ctrl-num" id="numGridPoints" value="51" step="2" min="5" max="501">
+          <span class="ctrl-unit"></span>
+        </div>
+        <div class="ctrl-row">
+          <span class="ctrl-label-txt">Δx / Δr</span>
+          <span class="ctrl-badge" id="dxDisplay">0.0020 m</span>
+        </div>
+      </div>
+
+      <!-- Material Properties -->
+      <div class="ctrl-group">
+        <div class="ctrl-group-label">Material Properties</div>
+        <div class="ctrl-row">
+          <span class="ctrl-label-txt">α  <span class="ctrl-unit">m² s⁻¹</span></span>
+          <input type="number" class="ctrl-num" id="alpha" value="1e-4" step="1e-6" min="1e-12" max="1">
+        </div>
+        <div class="ctrl-row">
+          <span class="ctrl-label-txt">k  <span class="ctrl-unit">W m⁻¹K⁻¹</span></span>
+          <input type="number" class="ctrl-num" id="kCond" value="200" step="1" min="0.001" max="10000">
+        </div>
+        <div class="ctrl-row">
+          <span class="ctrl-label-txt">ρ  <span class="ctrl-unit">kg m⁻³</span></span>
+          <input type="number" class="ctrl-num" id="rho" value="8000" step="1" min="1" max="100000">
+        </div>
+        <div class="ctrl-row">
+          <span class="ctrl-label-txt">c<sub>p</sub>  <span class="ctrl-unit">J kg⁻¹K⁻¹</span></span>
+          <input type="number" class="ctrl-num" id="cp" value="500" step="1" min="1" max="100000">
+        </div>
+        <div class="ctrl-note" style="margin-top:2px">α = k/(ρ·c<sub>p</sub>) = <span id="alphaComputed">5.00e-5</span> m² s⁻¹</div>
+      </div>
+
+      <!-- Boundary Conditions -->
+      <div class="ctrl-group">
+        <div class="ctrl-group-label">Boundary Conditions</div>
+
+        <div class="bc-sub" id="bcLeftLabel">Left / Inner &nbsp;(x = 0)</div>
+        <div class="ctrl-row" style="margin-bottom:8px">
+          <select class="ctrl-select" id="bcLeftType" style="width:110px" title="Dirichlet = fixed T, Neumann = fixed flux">
+            <option value="dirichlet">Dirichlet (T)</option>
+            <option value="neumann">Neumann (q)</option>
+          </select>
+          <input type="number" class="ctrl-num" id="bcLeftValue" value="400" step="1">
+          <span class="ctrl-unit" id="bcLeftUnit">K</span>
+        </div>
+
+        <div class="bc-sub" id="bcRightLabel">Right / Outer &nbsp;(x = L)</div>
+        <div class="ctrl-row">
+          <select class="ctrl-select" id="bcRightType" style="width:110px">
+            <option value="dirichlet">Dirichlet (T)</option>
+            <option value="neumann">Neumann (q)</option>
+          </select>
+          <input type="number" class="ctrl-num" id="bcRightValue" value="300" step="1">
+          <span class="ctrl-unit" id="bcRightUnit">K</span>
+        </div>
+      </div>
+
+      <!-- Initial Condition -->
+      <div class="ctrl-group">
+        <div class="ctrl-group-label">Initial Condition</div>
+        <div class="ctrl-row">
+          <span class="ctrl-label-txt">T₀</span>
+          <input type="number" class="ctrl-num" id="initialTemp" value="300" step="1">
+          <span class="ctrl-unit">K</span>
+        </div>
+      </div>
+
+      <!-- Time Settings -->
+      <div class="ctrl-group">
+        <div class="ctrl-group-label">Time Settings</div>
+        <div class="ctrl-row">
+          <span class="ctrl-label-txt">Total time</span>
+          <input type="number" class="ctrl-num" id="totalTime" value="10" step="0.1" min="0.001" max="100000">
+          <span class="ctrl-unit">s</span>
+        </div>
+        <div class="ctrl-row">
+          <span class="ctrl-label-txt">Δt</span>
+          <input type="number" class="ctrl-num" id="dtInput" value="0.001" step="0.0001" min="1e-10" max="10">
+          <span class="ctrl-unit">s</span>
+        </div>
+        <div class="ctrl-row" style="margin-top:2px">
+          <span class="ctrl-label-txt">Max stable Δt</span>
+          <span class="ctrl-badge" id="dtMaxDisplay">—</span>
+        </div>
+      </div>
+
+      <!-- Buttons -->
+      <div class="sim-btns" style="margin-bottom:6px">
+        <button class="btn-sim btn-run" id="btnRun">▶ Run</button>
+        <button class="btn-sim btn-stop" id="btnPause" disabled>⏸ Pause</button>
+        <button class="btn-sim btn-reset btn-sm" id="btnReset">↺ Reset</button>
+      </div>
+      <div class="sim-btns">
+        <button class="btn-sim btn-ss btn-sm" id="btnSteadyState">📊 Steady State</button>
+        <button class="btn-sim btn-reset btn-sm" id="btnClearSS">✕ Clear SS</button>
+      </div>
+      <div class="kbd-hint">
+        <kbd>Space</kbd> Run / Pause &nbsp;&nbsp;
+        <kbd>R</kbd> Reset &nbsp;&nbsp;
+        <kbd>S</kbd> Steady state
+      </div>
+    </div>
+
+    <!-- ── Plot ── -->
+    <div class="sim-plots">
+      <div class="sim-canvas-wrap"><canvas id="plotCanvas"></canvas></div>
+      <div class="ap-stats">
+        <div class="ap-stat">
+          <div class="ap-stat-num" id="simTimeDisplay">0.000 s</div>
+          <div class="ap-stat-label">Sim Time</div>
+        </div>
+        <div class="ap-stat">
+          <div class="ap-stat-num" id="stepDisplay">0</div>
+          <div class="ap-stat-label">Step</div>
+        </div>
+        <div class="ap-stat">
+          <div class="ap-stat-num" id="coordDisplay">Cartesian</div>
+          <div class="ap-stat-label">Coordinate</div>
+        </div>
+        <div class="ap-stat">
+          <div class="ap-stat-num" id="stabilityDisplay">—</div>
+          <div class="ap-stat-label">Stability</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     References
+══════════════════════════════════════════════════════════ -->
+<div class="section" style="margin-top:56px">
+  <div class="section-num">References</div>
+  <h2 class="section-title">References</h2>
+  <ol class="ref-list">
+    <li class="ref-item">
+      <span class="ref-num">[1]</span>
+      <span>Fourier, J.B.J. (1822). <em>Théorie analytique de la chaleur</em>. Paris: Firmin Didot. (English translation: Freeman, A. (1878). <em>The Analytical Theory of Heat</em>. Cambridge University Press.)</span>
+    </li>
+    <li class="ref-item">
+      <span class="ref-num">[2]</span>
+      <span>Incropera, F.P., DeWitt, D.P., Bergman, T.L., &amp; Lavine, A.S. (2007). <em>Fundamentals of Heat and Mass Transfer</em> (6th ed.). John Wiley &amp; Sons.</span>
+    </li>
+    <li class="ref-item">
+      <span class="ref-num">[3]</span>
+      <span>Crank, J. (1975). <em>The Mathematics of Diffusion</em> (2nd ed.). Oxford University Press.</span>
+    </li>
+    <li class="ref-item">
+      <span class="ref-num">[4]</span>
+      <span>LeVeque, R.J. (2007). <em>Finite Difference Methods for Ordinary and Partial Differential Equations</em>. SIAM. <a href="https://doi.org/10.1137/1.9780898717839">doi:10.1137/1.9780898717839</a></span>
+    </li>
+    <li class="ref-item">
+      <span class="ref-num">[5]</span>
+      <span>Ozisik, M.N. (1993). <em>Heat Conduction</em> (2nd ed.). John Wiley &amp; Sons.</span>
+    </li>
+  </ol>
+</div>
+
+</div><!-- end page-wrap -->
+
+<!-- ── Accessibility panel ──────────────────────────────── -->
+<button class="acc-btn" id="accBtn" title="Display settings">⚙</button>
+<div class="acc-panel" id="accPanel">
+  <div class="acc-panel-title">Display Settings</div>
+  <div class="acc-row">
+    <div class="acc-row-label">Theme</div>
+    <div class="acc-toggle-row">
+      <span class="acc-toggle-label">Dark mode</span>
+      <label class="acc-switch"><input type="checkbox" id="darkToggle"><span class="acc-slider"></span></label>
+    </div>
+  </div>
+  <div class="acc-row">
+    <div class="acc-row-label">Font size</div>
+    <div class="acc-btn-group">
+      <button class="acc-opt" data-size="sm">S</button>
+      <button class="acc-opt active" data-size="md">M</button>
+      <button class="acc-opt" data-size="lg">L</button>
+    </div>
+  </div>
+  <div class="acc-row">
+    <div class="acc-row-label">Font style</div>
+    <div class="acc-btn-group">
+      <button class="acc-opt active" data-font="default">Sans</button>
+      <button class="acc-opt" data-font="serif">Serif</button>
+      <button class="acc-opt" data-font="mono">Mono</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+'use strict';
+
+// ── Accessibility panel ──────────────────────────────────
+const accBtn = document.getElementById('accBtn');
+const accPanel = document.getElementById('accPanel');
+const darkToggle = document.getElementById('darkToggle');
+
+function applyPrefs() {
+  const dark = localStorage.getItem('dark') === '1';
+  const size = localStorage.getItem('size') || 'md';
+  const font = localStorage.getItem('font') || 'default';
+  document.body.classList.toggle('dark-mode', dark);
+  darkToggle.checked = dark;
+  ['sm','md','lg'].forEach(s => document.body.classList.toggle('size-'+s, s===size));
+  ['sans','serif','mono'].forEach(f => document.body.classList.toggle('font-'+f, f===font && f!=='default'));
+  document.querySelectorAll('[data-size]').forEach(b => b.classList.toggle('active', b.dataset.size===size));
+  document.querySelectorAll('[data-font]').forEach(b => b.classList.toggle('active', b.dataset.font===font));
+}
+applyPrefs();
+accBtn.addEventListener('click', e => { e.stopPropagation(); accPanel.classList.toggle('open'); });
+document.addEventListener('click', e => { if (!accPanel.contains(e.target) && e.target!==accBtn) accPanel.classList.remove('open'); });
+darkToggle.addEventListener('change', () => { localStorage.setItem('dark', darkToggle.checked?'1':'0'); applyPrefs(); });
+document.querySelectorAll('[data-size]').forEach(b => b.addEventListener('click', () => { localStorage.setItem('size', b.dataset.size); applyPrefs(); }));
+document.querySelectorAll('[data-font]').forEach(b => b.addEventListener('click', () => { localStorage.setItem('font', b.dataset.font); applyPrefs(); }));
+
+// ── Simulator ────────────────────────────────────────────
+const canvas   = document.getElementById('plotCanvas');
+const ctx      = canvas.getContext('2d');
+const wrap     = canvas.parentElement;
+
+// DOM refs
+const elCoord       = document.getElementById('coordSystem');
+const elCylModeRow  = document.getElementById('cylModeRow');
+const elCylMode     = document.getElementById('cylindricalMode');
+const elLength      = document.getElementById('domainLength');
+const elNpts        = document.getElementById('numGridPoints');
+const elDxDisp      = document.getElementById('dxDisplay');
+const elAlpha       = document.getElementById('alpha');
+const elK           = document.getElementById('kCond');
+const elRho         = document.getElementById('rho');
+const elCp          = document.getElementById('cp');
+const elAlphaComp   = document.getElementById('alphaComputed');
+const elBcLType     = document.getElementById('bcLeftType');
+const elBcLVal      = document.getElementById('bcLeftValue');
+const elBcLUnit     = document.getElementById('bcLeftUnit');
+const elBcLLabel    = document.getElementById('bcLeftLabel');
+const elBcRType     = document.getElementById('bcRightType');
+const elBcRVal      = document.getElementById('bcRightValue');
+const elBcRUnit     = document.getElementById('bcRightUnit');
+const elBcRLabel    = document.getElementById('bcRightLabel');
+const elT0          = document.getElementById('initialTemp');
+const elTtotal      = document.getElementById('totalTime');
+const elDt          = document.getElementById('dtInput');
+const elDtMax       = document.getElementById('dtMaxDisplay');
+const elBtnRun      = document.getElementById('btnRun');
+const elBtnPause    = document.getElementById('btnPause');
+const elBtnReset    = document.getElementById('btnReset');
+const elBtnSS       = document.getElementById('btnSteadyState');
+const elBtnClearSS  = document.getElementById('btnClearSS');
+const elStatusDot   = document.getElementById('statusDot');
+const elStatusLbl   = document.getElementById('statusLabel');
+const elSimTime     = document.getElementById('simTimeDisplay');
+const elStep        = document.getElementById('stepDisplay');
+const elCoordDisp   = document.getElementById('coordDisplay');
+const elStabDisp    = document.getElementById('stabilityDisplay');
+
+// Safe number parser — avoids the `0 || default` pitfall
+const parseN = (el, def) => { const v = parseFloat(el.value); return isNaN(v) ? def : v; };
+const parseI = (el, def) => { const v = parseInt(el.value, 10); return isNaN(v) ? def : v; };
+
+// State
+let coordSys = 'cartesian', cylMode = 'radial';
+let L = 0.1, N = 51, dx = 0;
+let alpha = 1e-4, kCond = 200, rhoV = 8000, cpV = 500;
+let bcLType = 'dirichlet', bcLVal = 400;
+let bcRType = 'dirichlet', bcRVal = 300;
+let T0 = 300, tTotal = 10, dtReq = 0.001;
+
+let grid = null, T = null, Tss = null;
+let showSS = false, simTime = 0, step = 0;
+let running = false, paused = false, rafId = null, lastTs = null;
+
+function readUI() {
+  coordSys = elCoord.value;
+  cylMode  = elCylMode.value;
+  L        = Math.max(1e-4, parseN(elLength, 0.1));
+  N        = Math.max(3, Math.min(501, parseI(elNpts, 51)));
+  alpha    = Math.max(1e-12, parseN(elAlpha, 1e-4));
+  kCond    = Math.max(1e-6, parseN(elK, 200));
+  rhoV     = Math.max(1e-3, parseN(elRho, 8000));
+  cpV      = Math.max(1e-3, parseN(elCp, 500));
+  bcLType  = elBcLType.value;
+  bcLVal   = parseN(elBcLVal, 0);   // 0 is valid (insulated/symmetry)
+  bcRType  = elBcRType.value;
+  bcRVal   = parseN(elBcRVal, 300); // 0 is valid (e.g. cold wall at 0 K)
+  T0       = parseN(elT0, 300);     // 0 K is valid (absolute zero IC)
+  tTotal   = Math.max(1e-6, parseN(elTtotal, 10));
+  dtReq    = Math.max(1e-12, parseN(elDt, 0.001));
+}
+
+function needsSymmetry() {
+  return coordSys === 'spherical' ||
+         (coordSys === 'cylindrical' && cylMode === 'radial');
+}
+
+function enforceBCs() {
+  if (needsSymmetry()) {
+    // Always reset to zero-flux symmetry BC — never allow non-zero flux at r=0
+    bcLType = 'neumann';
+    bcLVal  = 0;
+    elBcLType.value = 'neumann';
+    elBcLType.disabled = true;
+    elBcLVal.value = '0';
+    elBcLVal.disabled = true;
+    elBcLLabel.textContent = 'Inner  (r = 0, symmetry)';
+    elBcRLabel.textContent = 'Outer  (r = R)';
+  } else {
+    elBcLType.disabled = false;
+    elBcLVal.disabled  = false;
+    const isAxial = coordSys === 'cylindrical' && cylMode === 'axial';
+    elBcLLabel.textContent = isAxial ? 'Left / Inner  (z = 0)' : 'Left / Inner  (x = 0)';
+    elBcRLabel.textContent = isAxial ? 'Right / Outer  (z = L)' : 'Right / Outer  (x = L)';
+  }
+  elBcLUnit.textContent = bcLType === 'dirichlet' ? 'K' : 'W m⁻²';
+  elBcRUnit.textContent = bcRType === 'dirichlet' ? 'K' : 'W m⁻²';
+}
+
+function updateCylRow() {
+  elCylModeRow.style.display = coordSys === 'cylindrical' ? 'flex' : 'none';
+}
+
+function buildGrid() {
+  dx = L / (N - 1);
+  grid = new Float64Array(N);
+  for (let i = 0; i < N; i++) grid[i] = i * dx;
+  elDxDisp.textContent = dx.toPrecision(4) + ' m';
+}
+
+function updateAlphaComp() {
+  const ac = kCond / (rhoV * cpV);
+  elAlphaComp.textContent = ac.toExponential(3);
+}
+
+function maxStableDt() {
+  if (dx <= 0 || alpha <= 0) return Infinity;
+  const dx2 = dx * dx;
+  if (coordSys === 'cartesian' || (coordSys === 'cylindrical' && cylMode === 'axial'))
+    return 0.5 * dx2 / alpha;
+  if (coordSys === 'cylindrical')  // radial
+    return 0.25 * dx2 / alpha;
+  return (1.0 / 6.0) * dx2 / alpha; // spherical
+}
+
+function effectiveDt() {
+  const dtMax = maxStableDt();
+  return dtMax === Infinity ? dtReq : Math.min(dtReq, dtMax * 0.999);
+}
+
+function updateDtDisplay() {
+  const dtMax = maxStableDt();
+  if (dtMax === Infinity) {
+    elDtMax.textContent = 'N/A';
+    elDtMax.className = 'ctrl-badge';
+  } else {
+    elDtMax.textContent = dtMax.toExponential(3) + ' s';
+    elDtMax.className = 'ctrl-badge ' + (dtReq > dtMax * 1.01 ? 'warn' : 'ok');
+  }
+  updateStabDisplay();
+}
+
+function updateStabDisplay() {
+  const dtMax = maxStableDt();
+  const dtE   = effectiveDt();
+  const stable = dtE <= dtMax * 1.001;
+  elStabDisp.innerHTML = stable
+    ? `<span class="stab-badge ok">✓ Stable</span>`
+    : `<span class="stab-badge warn">⚠ Limited</span>`;
+}
+
+function coordLabel() {
+  if (coordSys === 'cartesian') return 'Cartesian';
+  if (coordSys === 'cylindrical') return cylMode === 'radial' ? 'Cylindrical (r)' : 'Cylindrical (z)';
+  return 'Spherical (r)';
+}
+
+function initT() {
+  T = new Float64Array(N);
+  T.fill(T0);
+  applyDirichlet(T);
+  simTime = 0; step = 0;
+  Tss = null; showSS = false;
+  updateStatusDisplay();
+}
+
+function applyDirichlet(arr) {
+  if (bcLType === 'dirichlet') arr[0] = bcLVal;
+  if (bcRType === 'dirichlet') arr[N - 1] = bcRVal;
+}
+
+// ── Time stepping ───────────────────────────────────────
+function timeStep(dt) {
+  const n = N, Tn = T, Tnew = new Float64Array(n);
+  const dx2 = dx * dx;
+  const r = alpha * dt / dx2;
+
+  // Cartesian or cylindrical-axial
+  if (coordSys === 'cartesian' || (coordSys === 'cylindrical' && cylMode === 'axial')) {
+    for (let i = 1; i < n - 1; i++) {
+      Tnew[i] = Tn[i] + r * (Tn[i+1] - 2*Tn[i] + Tn[i-1]);
+    }
+    // Left BC
+    if (bcLType === 'dirichlet') {
+      Tnew[0] = bcLVal;
+    } else {
+      // Ghost: T[-1] = T[1] + 2dx·q/k  (q > 0 → heat into domain from left)
+      Tnew[0] = Tn[0] + 2*r*(Tn[1] - Tn[0] + dx * bcLVal / kCond);
+    }
+    // Right BC
+    if (bcRType === 'dirichlet') {
+      Tnew[n-1] = bcRVal;
+    } else {
+      // Ghost: T[n] = T[n-2] - 2dx·q/k  (q > 0 → heat out of domain at right)
+      Tnew[n-1] = Tn[n-1] + 2*r*(Tn[n-2] - Tn[n-1] - dx * bcRVal / kCond);
+    }
+  }
+
+  // Cylindrical radial: ∂T/∂t = α(∂²T/∂r² + (1/r)∂T/∂r)
+  else if (coordSys === 'cylindrical' && cylMode === 'radial') {
+    // Interior
+    for (let i = 1; i < n - 1; i++) {
+      const ri = grid[i];
+      if (ri < 1e-14) {
+        // L'Hôpital limit at r=0: factor 4
+        Tnew[i] = Tn[i] + 4*r*(Tn[i+1] - Tn[i]);
+      } else {
+        const diff = r * (Tn[i+1] - 2*Tn[i] + Tn[i-1]);
+        const conv = (alpha * dt / ri) * (Tn[i+1] - Tn[i-1]) / (2*dx);
+        Tnew[i] = Tn[i] + diff + conv;
+      }
+    }
+    // Left: always symmetry Neumann q=0 → 4r factor, plus ghost correction for non-zero q
+    Tnew[0] = Tn[0] + 4*r*(Tn[1] - Tn[0]);
+    // Right BC
+    if (bcRType === 'dirichlet') {
+      Tnew[n-1] = bcRVal;
+    } else {
+      const rn = grid[n-1];
+      const Tgh = Tn[n-2] - 2*dx * bcRVal / kCond;
+      const diff = r * (Tgh - 2*Tn[n-1] + Tn[n-2]);
+      const conv = (alpha * dt / rn) * (Tgh - Tn[n-2]) / (2*dx);
+      Tnew[n-1] = Tn[n-1] + diff + conv;
+    }
+  }
+
+  // Spherical: ∂T/∂t = α(∂²T/∂r² + (2/r)∂T/∂r)
+  else {
+    // Interior
+    for (let i = 1; i < n - 1; i++) {
+      const ri = grid[i];
+      if (ri < 1e-14) {
+        // L'Hôpital limit at r=0: factor 6
+        Tnew[i] = Tn[i] + 6*r*(Tn[i+1] - Tn[i]);
+      } else {
+        const diff = r * (Tn[i+1] - 2*Tn[i] + Tn[i-1]);
+        const conv = (2*alpha * dt / ri) * (Tn[i+1] - Tn[i-1]) / (2*dx);
+        Tnew[i] = Tn[i] + diff + conv;
+      }
+    }
+    // Left: always symmetry Neumann q=0 → 6r factor
+    Tnew[0] = Tn[0] + 6*r*(Tn[1] - Tn[0]);
+    // Right BC
+    if (bcRType === 'dirichlet') {
+      Tnew[n-1] = bcRVal;
+    } else {
+      const rn = grid[n-1];
+      const Tgh = Tn[n-2] - 2*dx * bcRVal / kCond;
+      const diff = r * (Tgh - 2*Tn[n-1] + Tn[n-2]);
+      const conv = (2*alpha * dt / rn) * (Tgh - Tn[n-2]) / (2*dx);
+      Tnew[n-1] = Tn[n-1] + diff + conv;
+    }
+  }
+
+  // Copy back; re-enforce Dirichlet to prevent drift
+  for (let i = 0; i < n; i++) T[i] = Tnew[i];
+  applyDirichlet(T);
+}
+
+// ── Steady-state solver (Thomas algorithm) ──────────────
+function solveSS() {
+  const n = N;
+  const a = new Float64Array(n), b = new Float64Array(n),
+        c = new Float64Array(n), d = new Float64Array(n);
+
+  if (coordSys === 'cartesian' || (coordSys === 'cylindrical' && cylMode === 'axial')) {
+    for (let i = 1; i < n-1; i++) { a[i]=1; b[i]=-2; c[i]=1; d[i]=0; }
+    // Left
+    if (bcLType === 'dirichlet') { b[0]=1; c[0]=0; d[0]=bcLVal; }
+    else { b[0]=-2; c[0]=2; d[0]=-2*dx*bcLVal/kCond; }
+    // Right
+    if (bcRType === 'dirichlet') { a[n-1]=0; b[n-1]=1; d[n-1]=bcRVal; }
+    else { a[n-1]=2; b[n-1]=-2; d[n-1]=-2*dx*bcRVal/kCond; }
+
+  } else if (coordSys === 'cylindrical' && cylMode === 'radial') {
+    for (let i = 1; i < n-1; i++) {
+      const ri = grid[i];
+      if (ri < 1e-14) { b[i]=-2; c[i]=2; d[i]=0; }
+      else { const s=dx/(2*ri); a[i]=1-s; b[i]=-2; c[i]=1+s; d[i]=0; }
+    }
+    // Left: always Neumann q=0
+    b[0]=-2; c[0]=2; d[0]=0;
+    // Right
+    if (bcRType === 'dirichlet') { a[n-1]=0; b[n-1]=1; d[n-1]=bcRVal; }
+    else { const rn=grid[n-1],s=dx/(2*rn); a[n-1]=2; b[n-1]=-2; d[n-1]=(1+s)*2*dx*bcRVal/kCond; }
+
+  } else { // spherical
+    for (let i = 1; i < n-1; i++) {
+      const ri = grid[i];
+      if (ri < 1e-14) { b[i]=-2; c[i]=2; d[i]=0; }
+      else { const s=dx/ri; a[i]=1-s; b[i]=-2; c[i]=1+s; d[i]=0; }
+    }
+    // Left: always Neumann q=0
+    b[0]=-2; c[0]=2; d[0]=0;
+    // Right
+    if (bcRType === 'dirichlet') { a[n-1]=0; b[n-1]=1; d[n-1]=bcRVal; }
+    else { const rn=grid[n-1],s=dx/rn; a[n-1]=2; b[n-1]=-2; d[n-1]=(1+s)*2*dx*bcRVal/kCond; }
+  }
+
+  // Forward sweep
+  const bp = new Float64Array(n), dp = new Float64Array(n);
+  bp[0]=b[0]; dp[0]=d[0];
+  for (let i=1; i<n; i++) {
+    const w = a[i] / bp[i-1];
+    bp[i] = b[i] - w*c[i-1];
+    dp[i] = d[i] - w*dp[i-1];
+  }
+  // Back substitution
+  const Ts = new Float64Array(n);
+  Ts[n-1] = dp[n-1] / bp[n-1];
+  for (let i=n-2; i>=0; i--) Ts[i] = (dp[i] - c[i]*Ts[i+1]) / bp[i];
+  // Enforce Dirichlet exactly
+  if (bcLType === 'dirichlet') Ts[0] = bcLVal;
+  if (bcRType === 'dirichlet') Ts[n-1] = bcRVal;
+  return Ts;
+}
+
+// ── Simulation control ──────────────────────────────────
+function setStatus(status, label) {
+  elStatusLbl.textContent = label;
+  elStatusDot.className = 'dot ' + status;
+}
+
+function updateStatusDisplay() {
+  elSimTime.textContent = simTime.toFixed(4) + ' s';
+  elStep.textContent    = step.toLocaleString();
+  elCoordDisp.textContent = coordLabel();
+  updateStabDisplay();
+}
+
+function advance(dt) {
+  timeStep(dt);
+  simTime += dt;
+  step++;
+  updateStatusDisplay();
+}
+
+function rafLoop(ts) {
+  if (!running) return;
+  if (paused) { lastTs = null; rafId = requestAnimationFrame(rafLoop); return; }
+  if (!lastTs) { lastTs = ts; rafId = requestAnimationFrame(rafLoop); return; }
+
+  const elapsed = (ts - lastTs) / 1000;
+  lastTs = ts;
+
+  if (simTime >= tTotal) { finish(); return; }
+
+  const dtE  = effectiveDt();
+  const room = Math.min(elapsed * 8, tTotal - simTime);
+  const steps = Math.max(1, Math.floor(room / dtE));
+
+  for (let s = 0; s < steps && simTime < tTotal; s++) {
+    const use = Math.min(dtE, tTotal - simTime);
+    if (use <= 0) break;
+    advance(use);
+  }
+
+  drawPlot();
+  if (simTime >= tTotal) { finish(); return; }
+  rafId = requestAnimationFrame(rafLoop);
+}
+
+function finish() {
+  running = false;
+  elBtnRun.textContent = '▶ Run';
+  elBtnPause.disabled  = true;
+  setStatus('stopped', 'Complete');
+  drawPlot();
+}
+
+function startSim() {
+  if (running && !paused) return;
+  if (paused) {
+    paused = false;
+    elBtnPause.textContent = '⏸ Pause';
+    setStatus('running', 'Running');
+    lastTs = null;
+    if (!rafId) rafId = requestAnimationFrame(rafLoop);
+    return;
+  }
+  readUI(); enforceBCs(); buildGrid(); initT(); updateDtDisplay();
+  running = true; paused = false; simTime = 0; step = 0;
+  showSS = false; Tss = null;
+  elBtnRun.textContent = '⟳ Restart';
+  elBtnPause.disabled  = false;
+  elBtnPause.textContent = '⏸ Pause';
+  setStatus('running', 'Running');
+  updateStatusDisplay();
+  lastTs = null;
+  if (rafId) cancelAnimationFrame(rafId);
+  rafId = requestAnimationFrame(rafLoop);
+  drawPlot();
+}
+
+function pauseSim() {
+  if (!running) return;
+  paused = !paused;
+  if (paused) { elBtnPause.textContent = '▶ Resume'; setStatus('stopped', 'Paused'); }
+  else { elBtnPause.textContent = '⏸ Pause'; setStatus('running', 'Running'); lastTs = null; }
+}
+
+function resetSim() {
+  running = false; paused = false;
+  if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
+  readUI(); enforceBCs(); buildGrid(); initT(); updateDtDisplay();
+  showSS = false; Tss = null;
+  elBtnRun.textContent = '▶ Run';
+  elBtnPause.disabled  = true;
+  elBtnPause.textContent = '⏸ Pause';
+  setStatus('stopped', 'Idle');
+  updateStatusDisplay();
+  lastTs = null;
+  drawPlot();
+}
+
+function showSSOverlay() {
+  readUI(); enforceBCs(); buildGrid();
+  if (!T) { initT(); }
+  Tss = solveSS();
+  showSS = true;
+  elBtnSS.classList.add('active');
+  drawPlot();
+}
+
+function clearSSOverlay() {
+  showSS = false; Tss = null;
+  elBtnSS.classList.remove('active');
+  drawPlot();
+}
+
+// ── Canvas drawing ──────────────────────────────────────
+function resizeCanvas() {
+  const r = wrap.getBoundingClientRect();
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width  = r.width  * dpr;
+  canvas.height = r.height * dpr;
+  canvas.style.width  = r.width  + 'px';
+  canvas.style.height = r.height + 'px';
+  ctx.setTransform(1,0,0,1,0,0);
+  ctx.scale(dpr, dpr);
+}
+
+function drawPlot() {
+  resizeCanvas();
+  const W = canvas.width  / (window.devicePixelRatio||1);
+  const H = canvas.height / (window.devicePixelRatio||1);
+  const margin = { top:36, right:50, bottom:52, left:70 };
+  const pw = W - margin.left - margin.right;
+  const ph = H - margin.top  - margin.bottom;
+  if (pw <= 0 || ph <= 0) return;
+
+  // Background
+  ctx.fillStyle = '#090e1a';
+  ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = '#0b1120';
+  ctx.fillRect(margin.left, margin.top, pw, ph);
+
+  // Data bounds
+  const curT = T || new Float64Array(N).fill(T0);
+  let tMin = Infinity, tMax = -Infinity;
+  for (let v of curT) { if (v < tMin) tMin=v; if (v > tMax) tMax=v; }
+  if (showSS && Tss) for (let v of Tss) { if (v < tMin) tMin=v; if (v > tMax) tMax=v; }
+  if (!isFinite(tMin)) { tMin = 200; tMax = 500; }
+  const tRange = tMax - tMin;
+  const pad  = tRange * 0.15 || 20;
+  const yMin = tMin - pad, yMax = tMax + pad;
+  const xMin = 0, xMax = L;
+  const toX = x => margin.left + (x - xMin)/(xMax - xMin)*pw;
+  const toY = y => margin.top  + ph - (y - yMin)/(yMax - yMin)*ph;
+
+  // Grid lines
+  const isDark = document.body.classList.contains('dark-mode');
+  const gridClr = '#161f2e';
+  ctx.strokeStyle = gridClr; ctx.lineWidth = 0.8;
+  for (let i=0; i<=6; i++) {
+    const yv = yMin+(yMax-yMin)*i/6;
+    ctx.beginPath(); ctx.moveTo(margin.left, toY(yv)); ctx.lineTo(margin.left+pw, toY(yv)); ctx.stroke();
+  }
+  for (let i=0; i<=8; i++) {
+    const xv = xMin+(xMax-xMin)*i/8;
+    ctx.beginPath(); ctx.moveTo(toX(xv), margin.top); ctx.lineTo(toX(xv), margin.top+ph); ctx.stroke();
+  }
+
+  // Axes border
+  ctx.strokeStyle = '#2d3e55'; ctx.lineWidth = 1.5;
+  ctx.strokeRect(margin.left, margin.top, pw, ph);
+
+  // Y labels
+  ctx.fillStyle = '#7a90ae'; ctx.font = '11px "DM Mono", monospace';
+  ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+  for (let i=0; i<=6; i++) {
+    const yv = yMin+(yMax-yMin)*i/6;
+    ctx.fillText(yv.toFixed(0), margin.left-10, toY(yv));
+  }
+  ctx.save(); ctx.translate(14, margin.top+ph/2); ctx.rotate(-Math.PI/2);
+  ctx.textAlign = 'center'; ctx.fillText('Temperature (K)', 0, 0); ctx.restore();
+
+  // X labels
+  const xLbl = coordSys==='cylindrical'&&cylMode==='axial' ? 'z (m)'
+              : coordSys==='cartesian' ? 'x (m)' : 'r (m)';
+  ctx.fillStyle = '#7a90ae'; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+  for (let i=0; i<=8; i++) {
+    const xv = xMin+(xMax-xMin)*i/8;
+    ctx.fillText(xv.toPrecision(3), toX(xv), margin.top+ph+8);
+  }
+  ctx.fillText(xLbl, margin.left+pw/2, margin.top+ph+32);
+
+  // Title
+  ctx.fillStyle = '#c8d6e8'; ctx.font = 'bold 12px "DM Sans", system-ui, sans-serif';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+  ctx.fillText(`Temperature Profile — ${coordLabel()}  (t = ${simTime.toFixed(4)} s)`, margin.left+pw/2, margin.top-26);
+
+  // Steady-state overlay
+  if (showSS && Tss) {
+    ctx.strokeStyle = '#f59e0b'; ctx.lineWidth = 2; ctx.setLineDash([8,4]);
+    ctx.beginPath();
+    for (let i=0; i<Tss.length; i++) {
+      const px=toX(grid[i]), py=toY(Tss[i]);
+      i===0 ? ctx.moveTo(px,py) : ctx.lineTo(px,py);
+    }
+    ctx.stroke(); ctx.setLineDash([]);
+  }
+
+  // Current temperature — gradient fill + line
+  if (curT.length > 1) {
+    const grad = ctx.createLinearGradient(0, margin.top, 0, margin.top+ph);
+    grad.addColorStop(0,   'rgba(239,68,68,0.30)');
+    grad.addColorStop(0.5, 'rgba(249,115,22,0.15)');
+    grad.addColorStop(1,   'rgba(11,122,110,0.20)');
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    for (let i=0; i<curT.length; i++) {
+      const px=toX(grid[i]), py=toY(curT[i]);
+      i===0 ? ctx.moveTo(px,py) : ctx.lineTo(px,py);
+    }
+    ctx.lineTo(toX(grid[curT.length-1]), toY(yMin));
+    ctx.lineTo(toX(grid[0]), toY(yMin));
+    ctx.closePath(); ctx.fill();
+
+    ctx.strokeStyle = '#e85555'; ctx.lineWidth = 2.5;
+    ctx.shadowColor = 'rgba(232,85,85,0.45)'; ctx.shadowBlur = 6;
+    ctx.beginPath();
+    for (let i=0; i<curT.length; i++) {
+      const px=toX(grid[i]), py=toY(curT[i]);
+      i===0 ? ctx.moveTo(px,py) : ctx.lineTo(px,py);
+    }
+    ctx.stroke(); ctx.shadowBlur = 0;
+  }
+
+  // Initial-temperature reference line
+  if (step > 0) {
+    ctx.strokeStyle = '#2d3e55'; ctx.lineWidth = 1; ctx.setLineDash([4,6]);
+    const iy = toY(T0);
+    ctx.beginPath(); ctx.moveTo(margin.left,iy); ctx.lineTo(margin.left+pw,iy); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle='#4a6070'; ctx.textAlign='left'; ctx.textBaseline='bottom'; ctx.font='10px "DM Mono",monospace';
+    ctx.fillText('T₀', margin.left+pw+4, iy+3);
+  }
+
+  // Endpoint circles
+  if (curT.length > 0) {
+    const drawDot = (x, y, col) => {
+      ctx.beginPath(); ctx.arc(x, y, 5, 0, Math.PI*2);
+      ctx.fillStyle = '#0b1120'; ctx.fill();
+      ctx.strokeStyle = col; ctx.lineWidth = 2; ctx.stroke();
+    };
+    drawDot(toX(grid[0]), toY(curT[0]), '#e85555');
+    drawDot(toX(grid[N-1]), toY(curT[N-1]), '#0b7a6e');
+  }
+
+  // Legend
+  const lx = margin.left+10, ly = margin.top+10;
+  ctx.font = '10px "DM Mono", monospace'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+  ctx.fillStyle = '#e85555'; ctx.fillRect(lx, ly, 16, 3);
+  ctx.fillStyle = '#c8d6e8'; ctx.fillText('Current T(t)', lx+22, ly);
+  if (showSS && Tss) {
+    ctx.strokeStyle = '#f59e0b'; ctx.lineWidth = 2; ctx.setLineDash([6,3]);
+    ctx.beginPath(); ctx.moveTo(lx, ly+16); ctx.lineTo(lx+16, ly+16); ctx.stroke();
+    ctx.setLineDash([]); ctx.fillStyle = '#c8d6e8'; ctx.fillText('Steady State', lx+22, ly+16);
+  }
+}
+
+// ── Event listeners ─────────────────────────────────────
+elBtnRun.addEventListener('click', startSim);
+elBtnPause.addEventListener('click', pauseSim);
+elBtnReset.addEventListener('click', resetSim);
+elBtnSS.addEventListener('click', () => showSS ? clearSSOverlay() : showSSOverlay());
+elBtnClearSS.addEventListener('click', clearSSOverlay);
+
+function onCoordChange() {
+  readUI(); enforceBCs(); updateCylRow(); buildGrid(); initT();
+  updateDtDisplay(); updateStatusDisplay();
+  elCoordDisp.textContent = coordLabel();
+  drawPlot();
+}
+elCoord.addEventListener('change', onCoordChange);
+elCylMode.addEventListener('change', onCoordChange);
+
+function onGridChange() {
+  readUI(); enforceBCs(); buildGrid(); initT();
+  updateDtDisplay(); updateStatusDisplay(); drawPlot();
+}
+elLength.addEventListener('input', onGridChange);
+elNpts.addEventListener('input', onGridChange);
+
+function onMaterialChange() {
+  readUI(); updateAlphaComp(); updateDtDisplay();
+}
+[elAlpha, elK, elRho, elCp].forEach(el => el.addEventListener('input', onMaterialChange));
+
+function onBCChange() {
+  readUI(); enforceBCs();
+  Tss = null; showSS = false;
+  elBcLUnit.textContent = bcLType === 'dirichlet' ? 'K' : 'W m⁻²';
+  elBcRUnit.textContent = bcRType === 'dirichlet' ? 'K' : 'W m⁻²';
+  if (!running) { initT(); updateStatusDisplay(); }
+  drawPlot();
+}
+[elBcLType, elBcLVal, elBcRType, elBcRVal].forEach(el => el.addEventListener('change', onBCChange));
+[elBcLVal, elBcRVal].forEach(el => el.addEventListener('input', onBCChange));
+
+elT0.addEventListener('input', () => {
+  readUI();
+  if (!running) { initT(); updateStatusDisplay(); }
+  drawPlot();
+});
+
+elTtotal.addEventListener('input', () => { readUI(); });
+elDt.addEventListener('input', () => { readUI(); updateDtDisplay(); });
+
+window.addEventListener('resize', drawPlot);
+window.addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+  if (e.key === ' ') { e.preventDefault(); (running && !paused) ? pauseSim() : startSim(); }
+  else if (e.key === 'r' || e.key === 'R') resetSim();
+  else if (e.key === 's' || e.key === 'S') showSS ? clearSSOverlay() : showSSOverlay();
+});
+
+// ── Init ─────────────────────────────────────────────────
+readUI();
+enforceBCs();
+updateCylRow();
+buildGrid();
+initT();
+updateAlphaComp();
+updateDtDisplay();
+updateStatusDisplay();
+setStatus('stopped', 'Idle');
+elCoordDisp.textContent = coordLabel();
+drawPlot();
+
+})();
+</script>
+</body>
+</html>
