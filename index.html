@@ -822,26 +822,28 @@ function solveSS() {
   } else if (coordSys === 'cylindrical' && cylMode === 'radial') {
     for (let i = 1; i < n-1; i++) {
       const ri = grid[i];
-      if (ri < 1e-14) { b[i]=-2; c[i]=2; d[i]=0; }
+      if (ri < 1e-14) { b[i]=-4; c[i]=4; d[i]=0; }
       else { const s=dx/(2*ri); a[i]=1-s; b[i]=-2; c[i]=1+s; d[i]=0; }
     }
-    // Left: always Neumann q=0
-    b[0]=-2; c[0]=2; d[0]=0;
+    // Left: L'Hôpital factor 4 (consistent with transient center: 4r*(T[1]-T[0]))
+    b[0]=-4; c[0]=4; d[0]=0;
     // Right
-    if (bcRType === 'dirichlet') { a[n-1]=0; b[n-1]=1; d[n-1]=bcRVal; }
-    else { const rn=grid[n-1],s=dx/(2*rn); a[n-1]=2; b[n-1]=-2; d[n-1]=(1+s)*2*dx*bcRVal/kCond; }
+    if (bcRType === 'dirichlet') { a[n-1]=0; b[n-1]=1; c[n-1]=0; d[n-1]=bcRVal; }
+    // Neumann: dT/dr=-q/k → (T[n-1]-T[n-2])/dx=-q/k → T[n-2]-T[n-1]=dx·q/k
+    else { a[n-1]=1; b[n-1]=-1; c[n-1]=0; d[n-1]=dx*bcRVal/kCond; }
 
   } else { // spherical
     for (let i = 1; i < n-1; i++) {
       const ri = grid[i];
-      if (ri < 1e-14) { b[i]=-2; c[i]=2; d[i]=0; }
+      if (ri < 1e-14) { b[i]=-6; c[i]=6; d[i]=0; }
       else { const s=dx/ri; a[i]=1-s; b[i]=-2; c[i]=1+s; d[i]=0; }
     }
-    // Left: always Neumann q=0
-    b[0]=-2; c[0]=2; d[0]=0;
+    // Left: L'Hôpital factor 6 (consistent with transient center: 6r*(T[1]-T[0]))
+    b[0]=-6; c[0]=6; d[0]=0;
     // Right
-    if (bcRType === 'dirichlet') { a[n-1]=0; b[n-1]=1; d[n-1]=bcRVal; }
-    else { const rn=grid[n-1],s=dx/rn; a[n-1]=2; b[n-1]=-2; d[n-1]=(1+s)*2*dx*bcRVal/kCond; }
+    if (bcRType === 'dirichlet') { a[n-1]=0; b[n-1]=1; c[n-1]=0; d[n-1]=bcRVal; }
+    // Neumann: dT/dr=-q/k → (T[n-1]-T[n-2])/dx=-q/k → T[n-2]-T[n-1]=dx·q/k
+    else { a[n-1]=1; b[n-1]=-1; c[n-1]=0; d[n-1]=dx*bcRVal/kCond; }
   }
 
   // Forward sweep
