@@ -459,6 +459,10 @@
           <div class="ap-stat-num" id="stabilityDisplay">—</div>
           <div class="ap-stat-label">Stability</div>
         </div>
+        <div class="ap-stat">
+          <div class="ap-stat-num" id="tauDisplay">—</div>
+          <div class="ap-stat-label">τ (time const)</div>
+        </div>
       </div>
     </div>
   </div>
@@ -593,6 +597,7 @@ const elSimTime     = document.getElementById('simTimeDisplay');
 const elStep        = document.getElementById('stepDisplay');
 const elCoordDisp   = document.getElementById('coordDisplay');
 const elStabDisp    = document.getElementById('stabilityDisplay');
+const elTauDisp     = document.getElementById('tauDisplay');
 
 // Safe number parser — avoids the `0 || default` pitfall
 const parseN = (el, def) => { const v = parseFloat(el.value); return isNaN(v) ? def : v; };
@@ -700,6 +705,7 @@ function updateDtDisplay() {
     elDtMax.className = 'ctrl-badge ' + (dtReq > dtMax * 1.01 ? 'warn' : 'ok');
   }
   updateStabDisplay();
+  updateTauDisplay();
 }
 
 function updateStabDisplay() {
@@ -709,6 +715,24 @@ function updateStabDisplay() {
   elStabDisp.innerHTML = stable
     ? `<span class="stab-badge ok">✓ Stable</span>`
     : `<span class="stab-badge warn">⚠ Limited</span>`;
+}
+
+function thermalTau() {
+  if (!L || !alpha) return null;
+  // First eigenvalue squared for each geometry
+  // Cartesian/axial: π²   Spherical: π²   Cylindrical radial: ζ₁²=5.7832 (J₀ root)
+  const zeta2 = (coordSys === 'cylindrical' && cylMode === 'radial') ? 5.7832 : Math.PI * Math.PI;
+  return (L * L) / (zeta2 * alpha);
+}
+
+function updateTauDisplay() {
+  const tau = thermalTau();
+  if (!tau || !isFinite(tau)) { elTauDisp.textContent = '—'; return; }
+  const sug = (5 * tau).toFixed(tau < 1 ? 3 : tau < 10 ? 2 : 1);
+  elTauDisp.title = `Thermal time constant τ = L²/(ζ₁²·α). Run ≥ 5τ (${sug} s) for 99% convergence.`;
+  elTauDisp.textContent = tau < 1 ? tau.toExponential(2) + ' s'
+                        : tau < 100 ? tau.toFixed(1) + ' s'
+                        : tau.toFixed(0) + ' s';
 }
 
 function coordLabel() {
@@ -892,6 +916,7 @@ function updateStatusDisplay() {
   elStep.textContent    = step.toLocaleString();
   elCoordDisp.textContent = coordLabel();
   updateStabDisplay();
+  updateTauDisplay();
 }
 
 function advance(dt) {
