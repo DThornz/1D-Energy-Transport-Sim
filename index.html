@@ -340,22 +340,32 @@
       <div class="ctrl-group">
         <div class="ctrl-group-label">Material Properties</div>
         <div class="ctrl-row">
+          <span class="ctrl-label-txt">Input</span>
+          <select class="ctrl-select" id="matMode" style="flex:1">
+            <option value="krhocp">k, ρ, cₚ → α</option>
+            <option value="alpha">α direct</option>
+          </select>
+        </div>
+        <!-- α mode only -->
+        <div class="ctrl-row" id="rowAlpha" style="display:none">
           <span class="ctrl-label-txt">α  <span class="ctrl-unit">m² s⁻¹</span></span>
           <input type="number" class="ctrl-num" id="alpha" value="1e-4" step="1e-6" min="1e-12" max="1">
         </div>
+        <!-- k always visible (needed for Neumann flux BCs) -->
         <div class="ctrl-row">
           <span class="ctrl-label-txt">k  <span class="ctrl-unit">W m⁻¹K⁻¹</span></span>
           <input type="number" class="ctrl-num" id="kCond" value="200" step="1" min="0.001" max="10000">
         </div>
-        <div class="ctrl-row">
+        <!-- k,ρ,cₚ mode only -->
+        <div class="ctrl-row" id="rowRho">
           <span class="ctrl-label-txt">ρ  <span class="ctrl-unit">kg m⁻³</span></span>
           <input type="number" class="ctrl-num" id="rho" value="8000" step="1" min="1" max="100000">
         </div>
-        <div class="ctrl-row">
+        <div class="ctrl-row" id="rowCp">
           <span class="ctrl-label-txt">c<sub>p</sub>  <span class="ctrl-unit">J kg⁻¹K⁻¹</span></span>
           <input type="number" class="ctrl-num" id="cp" value="500" step="1" min="1" max="100000">
         </div>
-        <div class="ctrl-note" style="margin-top:2px">α = k/(ρ·c<sub>p</sub>) = <span id="alphaComputed">5.00e-5</span> m² s⁻¹</div>
+        <div class="ctrl-note" id="rowAlphaComp" style="margin-top:2px">α = k/(ρ·c<sub>p</sub>) = <span id="alphaComputed">5.00e-5</span> m² s⁻¹</div>
       </div>
 
       <!-- Boundary Conditions -->
@@ -554,6 +564,7 @@ const elCylMode     = document.getElementById('cylindricalMode');
 const elLength      = document.getElementById('domainLength');
 const elNpts        = document.getElementById('numGridPoints');
 const elDxDisp      = document.getElementById('dxDisplay');
+const elMatMode     = document.getElementById('matMode');
 const elAlpha       = document.getElementById('alpha');
 const elK           = document.getElementById('kCond');
 const elRho         = document.getElementById('rho');
@@ -604,10 +615,14 @@ function readUI() {
   cylMode  = elCylMode.value;
   L        = Math.max(1e-4, parseN(elLength, 0.1));
   N        = Math.max(3, Math.min(501, parseI(elNpts, 51)));
-  alpha    = Math.max(1e-12, parseN(elAlpha, 1e-4));
-  kCond    = Math.max(1e-6, parseN(elK, 200));
-  rhoV     = Math.max(1e-3, parseN(elRho, 8000));
-  cpV      = Math.max(1e-3, parseN(elCp, 500));
+  kCond = Math.max(1e-6, parseN(elK, 200));
+  if (elMatMode.value === 'alpha') {
+    alpha = Math.max(1e-12, parseN(elAlpha, 1e-4));
+  } else {
+    rhoV  = Math.max(1e-3, parseN(elRho, 8000));
+    cpV   = Math.max(1e-3, parseN(elCp, 500));
+    alpha = kCond / (rhoV * cpV);
+  }
   bcLType  = elBcLType.value;
   bcLVal   = parseN(elBcLVal, 0);   // 0 is valid (insulated/symmetry)
   bcRType  = elBcRType.value;
@@ -1175,6 +1190,22 @@ function onGridChange() {
 elLength.addEventListener('input', onGridChange);
 elNpts.addEventListener('input', onGridChange);
 
+function updateMatMode() {
+  const isAlpha = elMatMode.value === 'alpha';
+  document.getElementById('rowAlpha').style.display     = isAlpha ? '' : 'none';
+  document.getElementById('rowRho').style.display       = isAlpha ? 'none' : '';
+  document.getElementById('rowCp').style.display        = isAlpha ? 'none' : '';
+  document.getElementById('rowAlphaComp').style.display = isAlpha ? 'none' : '';
+}
+elMatMode.addEventListener('change', () => {
+  if (elMatMode.value === 'alpha') {
+    readUI();
+    elAlpha.value = alpha.toExponential(4);
+  }
+  updateMatMode();
+  readUI(); updateAlphaComp(); updateDtDisplay();
+});
+
 function onMaterialChange() {
   readUI(); updateAlphaComp(); updateDtDisplay();
 }
@@ -1212,6 +1243,7 @@ window.addEventListener('keydown', e => {
 readUI();
 enforceBCs();
 updateCylRow();
+updateMatMode();
 buildGrid();
 initT();
 updateAlphaComp();
