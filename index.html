@@ -315,6 +315,18 @@
             <option value="axial">Axial (z)</option>
           </select>
         </div>
+        <div class="ctrl-row" id="radialFillRow" style="display:none">
+          <span class="ctrl-label-txt">Geometry</span>
+          <select class="ctrl-select" id="radialFill" style="flex:1">
+            <option value="solid">Solid (r = 0 → R)</option>
+            <option value="annular">Annular (r₀ → R)</option>
+          </select>
+        </div>
+        <div class="ctrl-row" id="rInnerRow" style="display:none">
+          <span class="ctrl-label-txt">Inner r₀</span>
+          <input type="number" class="ctrl-num" id="rInner" value="0.01" step="0.001" min="0.0001" max="9.999">
+          <span class="ctrl-unit">m</span>
+        </div>
       </div>
 
       <!-- Domain & Grid -->
@@ -563,8 +575,12 @@ const wrap     = canvas.parentElement;
 
 // DOM refs
 const elCoord       = document.getElementById('coordSystem');
-const elCylModeRow  = document.getElementById('cylModeRow');
-const elCylMode     = document.getElementById('cylindricalMode');
+const elCylModeRow      = document.getElementById('cylModeRow');
+const elCylMode         = document.getElementById('cylindricalMode');
+const elRadialFillRow   = document.getElementById('radialFillRow');
+const elRadialFill      = document.getElementById('radialFill');
+const elRInnerRow       = document.getElementById('rInnerRow');
+const elRInner          = document.getElementById('rInner');
 const elLength      = document.getElementById('domainLength');
 const elNpts        = document.getElementById('numGridPoints');
 const elDxDisp      = document.getElementById('dxDisplay');
@@ -604,8 +620,10 @@ const parseN = (el, def) => { const v = parseFloat(el.value); return isNaN(v) ? 
 const parseI = (el, def) => { const v = parseInt(el.value, 10); return isNaN(v) ? def : v; };
 
 // State
-let coordSys = 'cartesian', cylMode = 'radial';
-let L = 0.1, N = 51, dx = 0;
+let coordSys = 'cartesian', cylMode = 'radial', radialMode = 'solid';
+let L = 0.1, N = 51, dx = 0, rInner = 0.01;
+let yMinOvr = null, yMaxOvr = null; // null = auto-scale; set by scroll wheel
+let plotYMin = 0, plotYMax = 500;   // updated each draw, read by scroll handler
 let alpha = 1e-4, kCond = 200, rhoV = 8000, cpV = 500;
 let bcLType = 'dirichlet', bcLVal = 373;
 let bcRType = 'dirichlet', bcRVal = 200;
@@ -616,9 +634,11 @@ let showSS = false, simTime = 0, step = 0;
 let running = false, paused = false, rafId = null, lastTs = null;
 
 function readUI() {
-  coordSys = elCoord.value;
-  cylMode  = elCylMode.value;
-  L        = Math.max(1e-4, parseN(elLength, 0.1));
+  coordSys   = elCoord.value;
+  cylMode    = elCylMode.value;
+  radialMode = elRadialFill.value;
+  L          = Math.max(1e-4, parseN(elLength, 0.1));
+  rInner     = Math.max(1e-6, Math.min(L * 0.999, parseN(elRInner, 0.01)));
   N        = Math.max(3, Math.min(501, parseI(elNpts, 51)));
   kCond = Math.max(1e-6, parseN(elK, 200));
   if (elMatMode.value === 'alpha') {
@@ -637,9 +657,12 @@ function readUI() {
   dtReq    = Math.max(1e-12, parseN(elDt, 0.001));
 }
 
-function needsSymmetry() {
+function isRadialGeom() {
   return coordSys === 'spherical' ||
          (coordSys === 'cylindrical' && cylMode === 'radial');
+}
+function needsSymmetry() {
+  return isRadialGeom() && radialMode === 'solid';
 }
 
 function enforceBCs() {
@@ -656,22 +679,29 @@ function enforceBCs() {
   } else {
     elBcLType.disabled = false;
     elBcLVal.disabled  = false;
-    const isAxial = coordSys === 'cylindrical' && cylMode === 'axial';
-    elBcLLabel.textContent = isAxial ? 'Left / Inner  (z = 0)' : 'Left / Inner  (x = 0)';
-    elBcRLabel.textContent = isAxial ? 'Right / Outer  (z = L)' : 'Right / Outer  (x = L)';
+    const isAxial   = coordSys === 'cylindrical' && cylMode === 'axial';
+    const isAnnular = isRadialGeom() && radialMode === 'annular';
+    elBcLLabel.textContent = isAnnular ? `Inner  (r = ${rInner.toPrecision(3)} m)`
+        : isAxial ? 'Left / Inner  (z = 0)' : 'Left / Inner  (x = 0)';
+    elBcRLabel.textContent = isAnnular ? 'Outer  (r = R)'
+        : isAxial ? 'Right / Outer  (z = L)' : 'Right / Outer  (x = L)';
   }
   elBcLUnit.textContent = bcLType === 'dirichlet' ? 'K' : 'W m⁻²';
   elBcRUnit.textContent = bcRType === 'dirichlet' ? 'K' : 'W m⁻²';
 }
 
-function updateCylRow() {
-  elCylModeRow.style.display = coordSys === 'cylindrical' ? 'flex' : 'none';
+function updateGeomRows() {
+  elCylModeRow.style.display    = coordSys === 'cylindrical' ? 'flex' : 'none';
+  const showRadial = isRadialGeom();
+  elRadialFillRow.style.display = showRadial ? 'flex' : 'none';
+  elRInnerRow.style.display     = (showRadial && radialMode === 'annular') ? 'flex' : 'none';
 }
 
 function buildGrid() {
-  dx = L / (N - 1);
+  const r0 = (isRadialGeom() && radialMode === 'annular') ? rInner : 0;
+  dx = (L - r0) / (N - 1);
   grid = new Float64Array(N);
-  for (let i = 0; i < N; i++) grid[i] = i * dx;
+  for (let i = 0; i < N; i++) grid[i] = r0 + i * dx;
   elDxDisp.textContent = dx.toPrecision(4) + ' m';
 }
 
@@ -784,56 +814,62 @@ function timeStep(dt) {
 
   // Cylindrical radial: ∂T/∂t = α(∂²T/∂r² + (1/r)∂T/∂r)
   else if (coordSys === 'cylindrical' && cylMode === 'radial') {
-    // Interior
     for (let i = 1; i < n - 1; i++) {
       const ri = grid[i];
-      if (ri < 1e-14) {
-        // L'Hôpital limit at r=0: factor 4
-        Tnew[i] = Tn[i] + 4*r*(Tn[i+1] - Tn[i]);
-      } else {
-        const diff = r * (Tn[i+1] - 2*Tn[i] + Tn[i-1]);
-        const conv = (alpha * dt / ri) * (Tn[i+1] - Tn[i-1]) / (2*dx);
-        Tnew[i] = Tn[i] + diff + conv;
-      }
+      const diff = r * (Tn[i+1] - 2*Tn[i] + Tn[i-1]);
+      const conv = (alpha * dt / ri) * (Tn[i+1] - Tn[i-1]) / (2*dx);
+      Tnew[i] = Tn[i] + diff + conv;
     }
-    // Left: always symmetry Neumann q=0 → 4r factor, plus ghost correction for non-zero q
-    Tnew[0] = Tn[0] + 4*r*(Tn[1] - Tn[0]);
-    // Right BC
+    // Inner BC
+    if (radialMode === 'solid') {
+      Tnew[0] = Tn[0] + 4*r*(Tn[1] - Tn[0]);
+    } else if (bcLType === 'dirichlet') {
+      Tnew[0] = bcLVal;
+    } else {
+      const Tg = Tn[1] + 2*dx*bcLVal/kCond;
+      const diff = r*(Tg - 2*Tn[0] + Tn[1]);
+      const conv = (alpha*dt/grid[0])*(Tn[1]-Tg)/(2*dx);
+      Tnew[0] = Tn[0] + diff + conv;
+    }
+    // Outer BC
     if (bcRType === 'dirichlet') {
       Tnew[n-1] = bcRVal;
     } else {
       const rn = grid[n-1];
-      const Tgh = Tn[n-2] - 2*dx * bcRVal / kCond;
-      const diff = r * (Tgh - 2*Tn[n-1] + Tn[n-2]);
-      const conv = (alpha * dt / rn) * (Tgh - Tn[n-2]) / (2*dx);
+      const Tgh = Tn[n-2] - 2*dx*bcRVal/kCond;
+      const diff = r*(Tgh - 2*Tn[n-1] + Tn[n-2]);
+      const conv = (alpha*dt/rn)*(Tgh - Tn[n-2])/(2*dx);
       Tnew[n-1] = Tn[n-1] + diff + conv;
     }
   }
 
   // Spherical: ∂T/∂t = α(∂²T/∂r² + (2/r)∂T/∂r)
   else {
-    // Interior
     for (let i = 1; i < n - 1; i++) {
       const ri = grid[i];
-      if (ri < 1e-14) {
-        // L'Hôpital limit at r=0: factor 6
-        Tnew[i] = Tn[i] + 6*r*(Tn[i+1] - Tn[i]);
-      } else {
-        const diff = r * (Tn[i+1] - 2*Tn[i] + Tn[i-1]);
-        const conv = (2*alpha * dt / ri) * (Tn[i+1] - Tn[i-1]) / (2*dx);
-        Tnew[i] = Tn[i] + diff + conv;
-      }
+      const diff = r * (Tn[i+1] - 2*Tn[i] + Tn[i-1]);
+      const conv = (2*alpha * dt / ri) * (Tn[i+1] - Tn[i-1]) / (2*dx);
+      Tnew[i] = Tn[i] + diff + conv;
     }
-    // Left: always symmetry Neumann q=0 → 6r factor
-    Tnew[0] = Tn[0] + 6*r*(Tn[1] - Tn[0]);
-    // Right BC
+    // Inner BC
+    if (radialMode === 'solid') {
+      Tnew[0] = Tn[0] + 6*r*(Tn[1] - Tn[0]);
+    } else if (bcLType === 'dirichlet') {
+      Tnew[0] = bcLVal;
+    } else {
+      const Tg = Tn[1] + 2*dx*bcLVal/kCond;
+      const diff = r*(Tg - 2*Tn[0] + Tn[1]);
+      const conv = (2*alpha*dt/grid[0])*(Tn[1]-Tg)/(2*dx);
+      Tnew[0] = Tn[0] + diff + conv;
+    }
+    // Outer BC
     if (bcRType === 'dirichlet') {
       Tnew[n-1] = bcRVal;
     } else {
       const rn = grid[n-1];
-      const Tgh = Tn[n-2] - 2*dx * bcRVal / kCond;
-      const diff = r * (Tgh - 2*Tn[n-1] + Tn[n-2]);
-      const conv = (2*alpha * dt / rn) * (Tgh - Tn[n-2]) / (2*dx);
+      const Tgh = Tn[n-2] - 2*dx*bcRVal/kCond;
+      const diff = r*(Tgh - 2*Tn[n-1] + Tn[n-2]);
+      const conv = (2*alpha*dt/rn)*(Tgh - Tn[n-2])/(2*dx);
       Tnew[n-1] = Tn[n-1] + diff + conv;
     }
   }
@@ -859,29 +895,35 @@ function solveSS() {
     else { a[n-1]=2; b[n-1]=-2; d[n-1]=2*dx*bcRVal/kCond; }
 
   } else if (coordSys === 'cylindrical' && cylMode === 'radial') {
-    // Interior: ri >= dx > 0, so ri < 1e-14 never triggers — no guard needed
     for (let i = 1; i < n-1; i++) {
       const ri = grid[i], s = dx/(2*ri);
       a[i]=1-s; b[i]=-2; c[i]=1+s; d[i]=0;
     }
-    // Left: L'Hôpital factor 4 (consistent with transient center: 4r*(T[1]-T[0]))
-    b[0]=-4; c[0]=4; d[0]=0;
-    // Right
+    if (radialMode === 'solid') {
+      b[0]=-4; c[0]=4; d[0]=0;
+    } else {
+      // Annular inner BC: ghost-point substitution into cylindrical stencil at r=r_inner
+      const s0 = dx/(2*grid[0]);
+      if (bcLType === 'dirichlet') { b[0]=1; c[0]=0; d[0]=bcLVal; }
+      else { b[0]=-2; c[0]=2; d[0]=-(1-s0)*2*dx*bcLVal/kCond; }
+    }
     if (bcRType === 'dirichlet') { a[n-1]=0; b[n-1]=1; c[n-1]=0; d[n-1]=bcRVal; }
-    // Neumann: dT/dr=-q/k → (T[n-1]-T[n-2])/dx=-q/k → T[n-2]-T[n-1]=dx·q/k
     else { a[n-1]=1; b[n-1]=-1; c[n-1]=0; d[n-1]=dx*bcRVal/kCond; }
 
   } else { // spherical
-    // Interior: ri >= dx > 0, so ri < 1e-14 never triggers — no guard needed
     for (let i = 1; i < n-1; i++) {
       const ri = grid[i], s = dx/ri;
       a[i]=1-s; b[i]=-2; c[i]=1+s; d[i]=0;
     }
-    // Left: L'Hôpital factor 6 (consistent with transient center: 6r*(T[1]-T[0]))
-    b[0]=-6; c[0]=6; d[0]=0;
-    // Right
+    if (radialMode === 'solid') {
+      b[0]=-6; c[0]=6; d[0]=0;
+    } else {
+      // Annular inner BC: ghost-point substitution into spherical stencil at r=r_inner
+      const s0 = dx/grid[0];
+      if (bcLType === 'dirichlet') { b[0]=1; c[0]=0; d[0]=bcLVal; }
+      else { b[0]=-2; c[0]=2; d[0]=-(1-s0)*2*dx*bcLVal/kCond; }
+    }
     if (bcRType === 'dirichlet') { a[n-1]=0; b[n-1]=1; c[n-1]=0; d[n-1]=bcRVal; }
-    // Neumann: dT/dr=-q/k → (T[n-1]-T[n-2])/dx=-q/k → T[n-2]-T[n-1]=dx·q/k
     else { a[n-1]=1; b[n-1]=-1; c[n-1]=0; d[n-1]=dx*bcRVal/kCond; }
   }
 
@@ -1076,9 +1118,12 @@ function drawPlot() {
   if (showSS && Tss) for (let v of Tss) { if (v < tMin) tMin=v; if (v > tMax) tMax=v; }
   if (!isFinite(tMin)) { tMin = 200; tMax = 500; }
   const tRange = tMax - tMin;
-  const pad  = tRange * 0.15 || 20;
-  const yMin = tMin - pad, yMax = tMax + pad;
-  const xMin = 0, xMax = L;
+  const pad    = tRange * 0.15 || 20;
+  const autoYMin = tMin - pad, autoYMax = tMax + pad;
+  const yMin = yMinOvr !== null ? yMinOvr : autoYMin;
+  const yMax = yMaxOvr !== null ? yMaxOvr : autoYMax;
+  plotYMin = yMin; plotYMax = yMax;
+  const xMin = grid ? grid[0] : 0, xMax = L;
   const toX = x => margin.left + (x - xMin)/(xMax - xMin)*pw;
   const toY = y => margin.top  + ph - (y - yMin)/(yMax - yMin)*ph;
 
@@ -1200,13 +1245,15 @@ elBtnSS.addEventListener('click', () => showSS ? clearSSOverlay() : showSSOverla
 elBtnClearSS.addEventListener('click', clearSSOverlay);
 
 function onCoordChange() {
-  readUI(); enforceBCs(); updateCylRow(); buildGrid(); initT();
+  readUI(); enforceBCs(); updateGeomRows(); buildGrid(); initT();
   updateDtDisplay(); updateStatusDisplay();
   elCoordDisp.textContent = coordLabel();
   drawPlot();
 }
 elCoord.addEventListener('change', onCoordChange);
 elCylMode.addEventListener('change', onCoordChange);
+elRadialFill.addEventListener('change', onCoordChange);
+elRInner.addEventListener('input', onCoordChange);
 
 function onGridChange() {
   readUI(); enforceBCs(); buildGrid(); initT();
@@ -1259,6 +1306,29 @@ elT0.addEventListener('input', () => {
 elTtotal.addEventListener('input', () => { readUI(); });
 elDt.addEventListener('input', () => { readUI(); updateDtDisplay(); });
 
+// ── Y-axis scroll zoom ────────────────────────────────────
+canvas.addEventListener('wheel', e => {
+  e.preventDefault();
+  const rect = canvas.getBoundingClientRect();
+  const dpr  = window.devicePixelRatio || 1;
+  const cH   = canvas.height / dpr;
+  const mTop = 36, mBot = 52;
+  const ph   = cH - mTop - mBot;
+  const mouseY = (e.clientY - rect.top) * (cH / rect.height);
+  const frac = 1 - Math.max(0, Math.min(1, (mouseY - mTop) / ph));
+  const tempAtMouse = plotYMin + frac * (plotYMax - plotYMin);
+  const factor = e.deltaY > 0 ? 1.15 : 1/1.15;
+  const newRange = (plotYMax - plotYMin) * factor;
+  yMinOvr = tempAtMouse - frac * newRange;
+  yMaxOvr = yMinOvr + newRange;
+  drawPlot();
+}, { passive: false });
+
+canvas.addEventListener('dblclick', () => {
+  yMinOvr = null; yMaxOvr = null;
+  drawPlot();
+});
+
 window.addEventListener('resize', drawPlot);
 window.addEventListener('keydown', e => {
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
@@ -1270,7 +1340,7 @@ window.addEventListener('keydown', e => {
 // ── Init ─────────────────────────────────────────────────
 readUI();
 enforceBCs();
-updateCylRow();
+updateGeomRows();
 updateMatMode();
 buildGrid();
 initT();
