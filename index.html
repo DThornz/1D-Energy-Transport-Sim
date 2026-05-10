@@ -1037,6 +1037,7 @@ function pauseSim() {
 function resetSim() {
   running = false; paused = false;
   if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
+  yMinOvr = null; yMaxOvr = null;
   readUI(); enforceBCs(); buildGrid(); initT(); updateDtDisplay();
   showSS = false; Tss = null;
   elBtnRun.textContent = '▶ Run';
@@ -1323,8 +1324,17 @@ canvas.addEventListener('wheel', e => {
   const tempAtMouse = plotYMin + frac * (plotYMax - plotYMin);
   const factor = e.deltaY > 0 ? 1.15 : 1/1.15;
   const newRange = (plotYMax - plotYMin) * factor;
-  yMinOvr = tempAtMouse - frac * newRange;
-  yMaxOvr = yMinOvr + newRange;
+  let newYMin = tempAtMouse - frac * newRange;
+  let newYMax = newYMin + newRange;
+  // Keep boundary nodes on canvas
+  if (T && T.length >= 2) {
+    const tBndMin = Math.min(T[0], T[N - 1]);
+    const tBndMax = Math.max(T[0], T[N - 1]);
+    newYMin = Math.min(newYMin, tBndMin);
+    newYMax = Math.max(newYMax, tBndMax);
+  }
+  yMinOvr = newYMin;
+  yMaxOvr = newYMax;
   drawPlot();
 }, { passive: false });
 
