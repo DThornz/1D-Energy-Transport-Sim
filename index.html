@@ -324,8 +324,8 @@
         </div>
         <div class="ctrl-row" id="rInnerRow" style="display:none">
           <span class="ctrl-label-txt">Inner r₀</span>
-          <input type="number" class="ctrl-num" id="rInner" value="0.01" step="0.001" min="0.0001" max="9.999">
-          <span class="ctrl-unit">m</span>
+          <input type="number" class="ctrl-num" id="rInner" value="10" step="1" min="0.1" max="9999">
+          <span class="ctrl-unit">mm</span>
         </div>
       </div>
 
@@ -334,8 +334,8 @@
         <div class="ctrl-group-label">Domain &amp; Grid</div>
         <div class="ctrl-row">
           <span class="ctrl-label-txt">Length</span>
-          <input type="number" class="ctrl-num" id="domainLength" value="0.1" step="0.01" min="0.001" max="10">
-          <span class="ctrl-unit">m</span>
+          <input type="number" class="ctrl-num" id="domainLength" value="100" step="1" min="0.1" max="10000">
+          <span class="ctrl-unit">mm</span>
         </div>
         <div class="ctrl-row">
           <span class="ctrl-label-txt">Grid points</span>
@@ -344,7 +344,7 @@
         </div>
         <div class="ctrl-row">
           <span class="ctrl-label-txt">Δx / Δr</span>
-          <span class="ctrl-badge" id="dxDisplay">0.0020 m</span>
+          <span class="ctrl-badge" id="dxDisplay">2.000 mm</span>
         </div>
       </div>
 
@@ -360,24 +360,24 @@
         </div>
         <!-- α mode only -->
         <div class="ctrl-row" id="rowAlpha" style="display:none">
-          <span class="ctrl-label-txt">α  <span class="ctrl-unit">m² s⁻¹</span></span>
-          <input type="number" class="ctrl-num" id="alpha" value="1e-4" step="1e-6" min="1e-12" max="1">
+          <span class="ctrl-label-txt">α  <span class="ctrl-unit">mm² s⁻¹</span></span>
+          <input type="number" class="ctrl-num" id="alpha" value="100" step="1" min="1e-6" max="1e9">
         </div>
         <!-- k always visible in k/ρ/cₚ mode; in α mode only shown if a Neumann BC is active -->
         <div class="ctrl-row" id="rowK">
-          <span class="ctrl-label-txt">k  <span class="ctrl-unit">W m⁻¹K⁻¹</span></span>
-          <input type="number" class="ctrl-num" id="kCond" value="200" step="1" min="0.001" max="10000">
+          <span class="ctrl-label-txt">k  <span class="ctrl-unit">W mm⁻¹ °C⁻¹</span></span>
+          <input type="number" class="ctrl-num" id="kCond" value="0.2" step="0.001" min="1e-6" max="10">
         </div>
         <!-- k,ρ,cₚ mode only -->
         <div class="ctrl-row" id="rowRho">
-          <span class="ctrl-label-txt">ρ  <span class="ctrl-unit">kg m⁻³</span></span>
-          <input type="number" class="ctrl-num" id="rho" value="8000" step="1" min="1" max="100000">
+          <span class="ctrl-label-txt">ρ  <span class="ctrl-unit">g mm⁻³</span></span>
+          <input type="number" class="ctrl-num" id="rho" value="0.008" step="0.001" min="1e-6" max="0.1">
         </div>
         <div class="ctrl-row" id="rowCp">
-          <span class="ctrl-label-txt">c<sub>p</sub>  <span class="ctrl-unit">J kg⁻¹K⁻¹</span></span>
-          <input type="number" class="ctrl-num" id="cp" value="500" step="1" min="1" max="100000">
+          <span class="ctrl-label-txt">c<sub>p</sub>  <span class="ctrl-unit">J g⁻¹ °C⁻¹</span></span>
+          <input type="number" class="ctrl-num" id="cp" value="0.5" step="0.01" min="1e-4" max="100">
         </div>
-        <div class="ctrl-note" id="rowAlphaComp" style="margin-top:2px">α = k/(ρ·c<sub>p</sub>) = <span id="alphaComputed">5.00e-5</span> m² s⁻¹</div>
+        <div class="ctrl-note" id="rowAlphaComp" style="margin-top:2px">α = k/(ρ·c<sub>p</sub>) = <span id="alphaComputed">50.0</span> mm² s⁻¹</div>
       </div>
 
       <!-- Boundary Conditions -->
@@ -390,8 +390,8 @@
             <option value="dirichlet">Dirichlet (T)</option>
             <option value="neumann">Neumann (q)</option>
           </select>
-          <input type="number" class="ctrl-num" id="bcLeftValue" value="373" step="1">
-          <span class="ctrl-unit" id="bcLeftUnit">K</span>
+          <input type="number" class="ctrl-num" id="bcLeftValue" value="100" step="1">
+          <span class="ctrl-unit" id="bcLeftUnit">°C</span>
         </div>
 
         <div class="bc-sub" id="bcRightLabel">Right / Outer &nbsp;(x = L)</div>
@@ -400,8 +400,8 @@
             <option value="dirichlet">Dirichlet (T)</option>
             <option value="neumann">Neumann (q)</option>
           </select>
-          <input type="number" class="ctrl-num" id="bcRightValue" value="200" step="1">
-          <span class="ctrl-unit" id="bcRightUnit">K</span>
+          <input type="number" class="ctrl-num" id="bcRightValue" value="20" step="1">
+          <span class="ctrl-unit" id="bcRightUnit">°C</span>
         </div>
       </div>
 
@@ -410,8 +410,8 @@
         <div class="ctrl-group-label">Initial Condition</div>
         <div class="ctrl-row">
           <span class="ctrl-label-txt">T₀</span>
-          <input type="number" class="ctrl-num" id="initialTemp" value="296" step="1">
-          <span class="ctrl-unit">K</span>
+          <input type="number" class="ctrl-num" id="initialTemp" value="25" step="1">
+          <span class="ctrl-unit">°C</span>
         </div>
       </div>
 
@@ -621,13 +621,13 @@ const parseI = (el, def) => { const v = parseInt(el.value, 10); return isNaN(v) 
 
 // State
 let coordSys = 'cartesian', cylMode = 'radial', radialMode = 'solid';
-let L = 0.1, N = 51, dx = 0, rInner = 0.01;
+let L = 100, N = 51, dx = 0, rInner = 10;
 let yMinOvr = null, yMaxOvr = null; // null = auto-scale; set by scroll wheel
 let plotYMin = 0, plotYMax = 500;   // updated each draw, read by scroll handler
-let alpha = 1e-4, kCond = 200, rhoV = 8000, cpV = 500;
-let bcLType = 'dirichlet', bcLVal = 373;
-let bcRType = 'dirichlet', bcRVal = 200;
-let T0 = 296, tTotal = 10, dtReq = 0.001;
+let alpha = 100, kCond = 0.2, rhoV = 0.008, cpV = 0.5;
+let bcLType = 'dirichlet', bcLVal = 100;
+let bcRType = 'dirichlet', bcRVal = 20;
+let T0 = 25, tTotal = 10, dtReq = 0.001;
 
 let grid = null, T = null, Tss = null;
 let showSS = false, simTime = 0, step = 0;
@@ -637,22 +637,22 @@ function readUI() {
   coordSys   = elCoord.value;
   cylMode    = elCylMode.value;
   radialMode = elRadialFill.value;
-  L          = Math.max(1e-4, parseN(elLength, 0.1));
-  rInner     = Math.max(1e-6, Math.min(L * 0.999, parseN(elRInner, 0.01)));
+  L          = Math.max(0.1, parseN(elLength, 100));
+  rInner     = Math.max(0.01, Math.min(L * 0.999, parseN(elRInner, 10)));
   N        = Math.max(3, Math.min(501, parseI(elNpts, 51)));
-  kCond = Math.max(1e-6, parseN(elK, 200));
+  kCond = Math.max(1e-9, parseN(elK, 0.2));
   if (elMatMode.value === 'alpha') {
-    alpha = Math.max(1e-12, parseN(elAlpha, 1e-4));
+    alpha = Math.max(1e-9, parseN(elAlpha, 100));
   } else {
-    rhoV  = Math.max(1e-3, parseN(elRho, 8000));
-    cpV   = Math.max(1e-3, parseN(elCp, 500));
+    rhoV  = Math.max(1e-9, parseN(elRho, 0.008));
+    cpV   = Math.max(1e-6, parseN(elCp, 0.5));
     alpha = kCond / (rhoV * cpV);
   }
   bcLType  = elBcLType.value;
   bcLVal   = parseN(elBcLVal, 0);   // 0 is valid (insulated/symmetry)
   bcRType  = elBcRType.value;
-  bcRVal   = parseN(elBcRVal, 200); // 0 is valid (e.g. cold wall at 0 K)
-  T0       = parseN(elT0, 300);     // 0 K is valid (absolute zero IC)
+  bcRVal   = parseN(elBcRVal, 20);  // 0 is valid (cold wall)
+  T0       = parseN(elT0, 25);      // 0 °C is valid IC
   tTotal   = Math.max(1e-6, parseN(elTtotal, 10));
   dtReq    = Math.max(1e-12, parseN(elDt, 0.001));
 }
@@ -681,13 +681,13 @@ function enforceBCs() {
     elBcLVal.disabled  = false;
     const isAxial   = coordSys === 'cylindrical' && cylMode === 'axial';
     const isAnnular = isRadialGeom() && radialMode === 'annular';
-    elBcLLabel.textContent = isAnnular ? `Inner  (r = ${rInner.toPrecision(3)} m)`
+    elBcLLabel.textContent = isAnnular ? `Inner  (r = ${rInner.toPrecision(3)} mm)`
         : isAxial ? 'Left / Inner  (z = 0)' : 'Left / Inner  (x = 0)';
     elBcRLabel.textContent = isAnnular ? 'Outer  (r = R)'
         : isAxial ? 'Right / Outer  (z = L)' : 'Right / Outer  (x = L)';
   }
-  elBcLUnit.textContent = bcLType === 'dirichlet' ? 'K' : 'W m⁻²';
-  elBcRUnit.textContent = bcRType === 'dirichlet' ? 'K' : 'W m⁻²';
+  elBcLUnit.textContent = bcLType === 'dirichlet' ? '°C' : 'W mm⁻²';
+  elBcRUnit.textContent = bcRType === 'dirichlet' ? '°C' : 'W mm⁻²';
 }
 
 function updateGeomRows() {
@@ -702,12 +702,14 @@ function buildGrid() {
   dx = (L - r0) / (N - 1);
   grid = new Float64Array(N);
   for (let i = 0; i < N; i++) grid[i] = r0 + i * dx;
-  elDxDisp.textContent = dx.toPrecision(4) + ' m';
+  elDxDisp.textContent = dx.toPrecision(4) + ' mm';
 }
 
 function updateAlphaComp() {
   const ac = kCond / (rhoV * cpV);
-  elAlphaComp.textContent = ac.toExponential(3);
+  elAlphaComp.textContent = ac < 0.001 ? ac.toExponential(3)
+                          : ac < 1000  ? parseFloat(ac.toPrecision(4)).toString()
+                          : ac.toExponential(3);
 }
 
 function maxStableDt() {
@@ -1150,11 +1152,11 @@ function drawPlot() {
     ctx.fillText(yv.toFixed(0), margin.left-10, toY(yv));
   }
   ctx.save(); ctx.translate(14, margin.top+ph/2); ctx.rotate(-Math.PI/2);
-  ctx.textAlign = 'center'; ctx.fillText('Temperature (K)', 0, 0); ctx.restore();
+  ctx.textAlign = 'center'; ctx.fillText('Temperature (°C)', 0, 0); ctx.restore();
 
   // X labels
-  const xLbl = coordSys==='cylindrical'&&cylMode==='axial' ? 'z (m)'
-              : coordSys==='cartesian' ? 'x (m)' : 'r (m)';
+  const xLbl = coordSys==='cylindrical'&&cylMode==='axial' ? 'z (mm)'
+              : coordSys==='cartesian' ? 'x (mm)' : 'r (mm)';
   ctx.fillStyle = clr.label; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
   for (let i=0; i<=8; i++) {
     const xv = xMin+(xMax-xMin)*i/8;
@@ -1274,7 +1276,9 @@ function updateMatMode() {
 elMatMode.addEventListener('change', () => {
   if (elMatMode.value === 'alpha') {
     readUI();
-    elAlpha.value = alpha.toExponential(4);
+    elAlpha.value = alpha < 0.001 ? alpha.toExponential(4)
+                  : alpha < 10000 ? parseFloat(alpha.toPrecision(4)).toString()
+                  : alpha.toExponential(4);
   }
   updateMatMode();
   readUI(); updateAlphaComp(); updateDtDisplay();
@@ -1289,8 +1293,8 @@ function onBCChange() {
   readUI(); enforceBCs();
   updateMatMode();
   Tss = null; showSS = false;
-  elBcLUnit.textContent = bcLType === 'dirichlet' ? 'K' : 'W m⁻²';
-  elBcRUnit.textContent = bcRType === 'dirichlet' ? 'K' : 'W m⁻²';
+  elBcLUnit.textContent = bcLType === 'dirichlet' ? '°C' : 'W mm⁻²';
+  elBcRUnit.textContent = bcRType === 'dirichlet' ? '°C' : 'W mm⁻²';
   if (!running) { initT(); updateStatusDisplay(); }
   drawPlot();
 }
