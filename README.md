@@ -83,9 +83,9 @@ Open `index.html` in any modern web browser. No build step or server required.
 | **BC Type + Value** | Dirichlet (K) or Neumann (W m⁻²) at each boundary |
 | **T₀** | Uniform initial temperature |
 | **Δt** | Requested time step (automatically capped at the stability limit) |
-| **▶ Run / ⏸ Pause** | Start or pause the simulation |
-| **↺ Reset** | Reset to initial conditions |
-| **📊 Steady State** | Compute and overlay the analytical steady-state solution |
+| **Run / Pause** | Start or pause the simulation |
+| **Reset** | Reset to initial conditions |
+| **Steady State** | Compute and overlay the analytical steady-state solution |
 
 ### Keyboard shortcuts
 
