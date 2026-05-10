@@ -368,7 +368,7 @@
             <option value="dirichlet">Dirichlet (T)</option>
             <option value="neumann">Neumann (q)</option>
           </select>
-          <input type="number" class="ctrl-num" id="bcLeftValue" value="400" step="1">
+          <input type="number" class="ctrl-num" id="bcLeftValue" value="373" step="1">
           <span class="ctrl-unit" id="bcLeftUnit">K</span>
         </div>
 
@@ -378,7 +378,7 @@
             <option value="dirichlet">Dirichlet (T)</option>
             <option value="neumann">Neumann (q)</option>
           </select>
-          <input type="number" class="ctrl-num" id="bcRightValue" value="300" step="1">
+          <input type="number" class="ctrl-num" id="bcRightValue" value="373" step="1">
           <span class="ctrl-unit" id="bcRightUnit">K</span>
         </div>
       </div>
@@ -388,7 +388,7 @@
         <div class="ctrl-group-label">Initial Condition</div>
         <div class="ctrl-row">
           <span class="ctrl-label-txt">T₀</span>
-          <input type="number" class="ctrl-num" id="initialTemp" value="300" step="1">
+          <input type="number" class="ctrl-num" id="initialTemp" value="296" step="1">
           <span class="ctrl-unit">K</span>
         </div>
       </div>
@@ -591,9 +591,9 @@ const parseI = (el, def) => { const v = parseInt(el.value, 10); return isNaN(v) 
 let coordSys = 'cartesian', cylMode = 'radial';
 let L = 0.1, N = 51, dx = 0;
 let alpha = 1e-4, kCond = 200, rhoV = 8000, cpV = 500;
-let bcLType = 'dirichlet', bcLVal = 400;
-let bcRType = 'dirichlet', bcRVal = 300;
-let T0 = 300, tTotal = 10, dtReq = 0.001;
+let bcLType = 'dirichlet', bcLVal = 373;
+let bcRType = 'dirichlet', bcRVal = 373;
+let T0 = 296, tTotal = 10, dtReq = 0.001;
 
 let grid = null, T = null, Tss = null;
 let showSS = false, simTime = 0, step = 0;
