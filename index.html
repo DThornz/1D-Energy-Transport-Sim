@@ -378,7 +378,7 @@
             <option value="dirichlet">Dirichlet (T)</option>
             <option value="neumann">Neumann (q)</option>
           </select>
-          <input type="number" class="ctrl-num" id="bcRightValue" value="296" step="1">
+          <input type="number" class="ctrl-num" id="bcRightValue" value="200" step="1">
           <span class="ctrl-unit" id="bcRightUnit">K</span>
         </div>
       </div>
@@ -592,7 +592,7 @@ let coordSys = 'cartesian', cylMode = 'radial';
 let L = 0.1, N = 51, dx = 0;
 let alpha = 1e-4, kCond = 200, rhoV = 8000, cpV = 500;
 let bcLType = 'dirichlet', bcLVal = 373;
-let bcRType = 'dirichlet', bcRVal = 296;
+let bcRType = 'dirichlet', bcRVal = 200;
 let T0 = 296, tTotal = 10, dtReq = 0.001;
 
 let grid = null, T = null, Tss = null;
@@ -611,7 +611,7 @@ function readUI() {
   bcLType  = elBcLType.value;
   bcLVal   = parseN(elBcLVal, 0);   // 0 is valid (insulated/symmetry)
   bcRType  = elBcRType.value;
-  bcRVal   = parseN(elBcRVal, 296); // 0 is valid (e.g. cold wall at 0 K)
+  bcRVal   = parseN(elBcRVal, 200); // 0 is valid (e.g. cold wall at 0 K)
   T0       = parseN(elT0, 300);     // 0 K is valid (absolute zero IC)
   tTotal   = Math.max(1e-6, parseN(elTtotal, 10));
   dtReq    = Math.max(1e-12, parseN(elDt, 0.001));
