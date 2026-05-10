@@ -820,10 +820,10 @@ function solveSS() {
     else { a[n-1]=2; b[n-1]=-2; d[n-1]=2*dx*bcRVal/kCond; }
 
   } else if (coordSys === 'cylindrical' && cylMode === 'radial') {
+    // Interior: ri >= dx > 0, so ri < 1e-14 never triggers — no guard needed
     for (let i = 1; i < n-1; i++) {
-      const ri = grid[i];
-      if (ri < 1e-14) { b[i]=-4; c[i]=4; d[i]=0; }
-      else { const s=dx/(2*ri); a[i]=1-s; b[i]=-2; c[i]=1+s; d[i]=0; }
+      const ri = grid[i], s = dx/(2*ri);
+      a[i]=1-s; b[i]=-2; c[i]=1+s; d[i]=0;
     }
     // Left: L'Hôpital factor 4 (consistent with transient center: 4r*(T[1]-T[0]))
     b[0]=-4; c[0]=4; d[0]=0;
@@ -833,10 +833,10 @@ function solveSS() {
     else { a[n-1]=1; b[n-1]=-1; c[n-1]=0; d[n-1]=dx*bcRVal/kCond; }
 
   } else { // spherical
+    // Interior: ri >= dx > 0, so ri < 1e-14 never triggers — no guard needed
     for (let i = 1; i < n-1; i++) {
-      const ri = grid[i];
-      if (ri < 1e-14) { b[i]=-6; c[i]=6; d[i]=0; }
-      else { const s=dx/ri; a[i]=1-s; b[i]=-2; c[i]=1+s; d[i]=0; }
+      const ri = grid[i], s = dx/ri;
+      a[i]=1-s; b[i]=-2; c[i]=1+s; d[i]=0;
     }
     // Left: L'Hôpital factor 6 (consistent with transient center: 6r*(T[1]-T[0]))
     b[0]=-6; c[0]=6; d[0]=0;
@@ -846,15 +846,17 @@ function solveSS() {
     else { a[n-1]=1; b[n-1]=-1; c[n-1]=0; d[n-1]=dx*bcRVal/kCond; }
   }
 
-  // Forward sweep
+  // Forward sweep — guard against near-zero pivot (singular = pure Neumann problem)
   const bp = new Float64Array(n), dp = new Float64Array(n);
   bp[0]=b[0]; dp[0]=d[0];
   for (let i=1; i<n; i++) {
+    if (Math.abs(bp[i-1]) < 1e-14) return null; // singular matrix
     const w = a[i] / bp[i-1];
     bp[i] = b[i] - w*c[i-1];
     dp[i] = d[i] - w*dp[i-1];
   }
   // Back substitution
+  if (Math.abs(bp[n-1]) < 1e-14) return null; // singular matrix
   const Ts = new Float64Array(n);
   Ts[n-1] = dp[n-1] / bp[n-1];
   for (let i=n-2; i>=0; i--) Ts[i] = (dp[i] - c[i]*Ts[i+1]) / bp[i];
@@ -966,6 +968,7 @@ function showSSOverlay() {
   readUI(); enforceBCs(); buildGrid();
   if (!T) { initT(); }
   Tss = solveSS();
+  if (!Tss) { clearSSOverlay(); return; } // singular (pure Neumann — no unique SS)
   showSS = true;
   elBtnSS.classList.add('active');
   drawPlot();
