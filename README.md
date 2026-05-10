@@ -1,6 +1,6 @@
 # 1D Energy Transport Simulator
 
-An interactive browser-based solver for the one-dimensional heat (thermal diffusion) equation. Supports Cartesian, cylindrical, and spherical coordinate systems with Dirichlet and Neumann boundary conditions. Part of the [A. Mirza interactive simulator suite](https://dthornz.github.io/website-cv-tools/).
+An interactive browser-based solver for the one-dimensional heat (thermal diffusion) equation. Supports Cartesian, cylindrical, and spherical coordinate systems — including hollow/annular domains — with Dirichlet and Neumann boundary conditions. Part of the [A. Mirza interactive simulator suite](https://dthornz.github.io/website-cv-tools/).
 
 **[Live Demo →](https://dthornz.github.io/1D-Energy-Transport-Sim/)**
 
@@ -9,7 +9,8 @@ An interactive browser-based solver for the one-dimensional heat (thermal diffus
 ## Features
 
 - **Three coordinate systems** — Cartesian (plane wall/slab), cylindrical radial (rod/pipe), cylindrical axial (same as Cartesian), and spherical radial (sphere/droplet)
-- **Full boundary condition support** — independent Dirichlet (fixed temperature) or Neumann (fixed heat flux) conditions at each boundary; inner symmetry boundary automatically enforced for radial geometries
+- **Solid and hollow/annular geometry modes** — radial geometries (cylindrical and spherical) can be run as solid (r = 0 → R, inner symmetry enforced) or hollow/annular (r₀ → R, both boundaries fully free), enabling logarithmic and hyperbolic steady-state profiles
+- **Full boundary condition support** — independent Dirichlet (fixed temperature) or Neumann (fixed heat flux) conditions at each boundary; symmetry at r = 0 automatically enforced in solid mode
 - **Real-time simulation** — explicit forward-Euler / central-difference finite difference scheme with per-frame canvas rendering
 - **Von Neumann stability enforcement** — maximum stable Δt computed automatically for each geometry; time step capped with a visual warning when the user-requested value would cause instability
 - **Analytical steady-state overlay** — exact steady-state profile solved via the Thomas algorithm (O(N) tridiagonal solver) and rendered as a dashed overlay
@@ -42,7 +43,21 @@ In one spatial dimension the Laplacian takes the following coordinate-specific f
 
 - **Dirichlet** — prescribed temperature: T|_Γ = T_w
 - **Neumann** — prescribed heat flux: −k (∂T/∂n)|_Γ = q (W mm⁻²; q > 0 out of domain at right, into domain at left)
-- **Symmetry** — Neumann q = 0 is automatically applied at r = 0 for all radial geometries (cylindrical and spherical) to satisfy the physical symmetry condition ∂T/∂r|_{r=0} = 0
+- **Symmetry** — Neumann q = 0 is automatically applied at r = 0 for all solid radial geometries to satisfy ∂T/∂r|_{r=0} = 0
+
+### Hollow / Annular Domains
+
+For cylindrical radial and spherical geometries a **Solid / Annular** toggle switches the domain:
+
+| Mode | Domain | Inner BC |
+|---|---|---|
+| Solid | r = 0 → R | Symmetry (∂T/∂r = 0) forced automatically |
+| Annular / Hollow | r = r₀ → R | Free — Dirichlet or Neumann, user-specified |
+
+In annular mode the domain starts at a user-specified inner radius r₀ > 0, removing the coordinate singularity at the origin. Both boundaries then accept any BC combination, enabling the physically distinct steady-state profiles:
+
+- **Hollow cylinder**: T(r) = A + B ln(r)
+- **Hollow sphere**: T(r) = A + B/r
 
 ### Numerical Method
 
@@ -67,7 +82,13 @@ Cylindrical and spherical interior nodes include an additional first-derivative 
 
 The tighter limits for radial geometries arise from the larger stencil coefficients at r = 0.
 
-**Steady-state solver** — setting ∂T/∂t = 0 yields a tridiagonal linear system solved in O(N) operations using the Thomas algorithm. In Cartesian geometry the exact solution is linear; in cylindrical it is logarithmic; in spherical it is T = A − B/r.
+**Steady-state solver** — setting ∂T/∂t = 0 yields a tridiagonal linear system solved in O(N) operations using the Thomas algorithm. Profile shapes by geometry and domain mode:
+
+| Geometry | Solid | Annular / Hollow |
+|---|---|---|
+| Cartesian / Cyl. axial | T = A + Bx (linear) | same |
+| Cylindrical radial | T = const (C₁ = 0 for finiteness) | T = A + B ln(r) |
+| Spherical radial | T = const (C₁ = 0 for finiteness) | T = A + B/r |
 
 ---
 
@@ -78,6 +99,8 @@ Open `index.html` in any modern web browser. No build step or server required.
 | Control | Action |
 |---|---|
 | **Coordinate System** | Switch between Cartesian, cylindrical (radial or axial), and spherical |
+| **Solid / Annular** | (Radial geometries only) Solid enforces inner symmetry at r = 0; Annular sets a free inner boundary at r = r₀ |
+| **Inner r₀** | Inner radius for annular/hollow mode (mm) |
 | **Length / Grid points** | Set domain size and spatial resolution |
 | **α, k, ρ, cₚ** | Material thermal properties (α overrides the computed value only if changed independently) |
 | **BC Type + Value** | Dirichlet (°C) or Neumann (W mm⁻²) at each boundary |
