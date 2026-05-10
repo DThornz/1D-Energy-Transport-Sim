@@ -68,13 +68,17 @@ body.dark-mode .nav-dropdown-item:hover{color:#2dd4bf!important;background:rgba(
 
 /* ─── Equation display ───────────────────────────────────── */
 .eq-block{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:20px 24px;margin:20px 0;font-family:var(--mono);font-size:.88em;line-height:2;overflow-x:auto}
-.eq-block .eq-row{display:flex;align-items:baseline;gap:12px;padding:2px 0;flex-wrap:wrap}
-.eq-label{color:var(--teal);font-weight:500;min-width:80px;flex-shrink:0}
-.eq-main{color:var(--text)}
+.eq-block .eq-row{display:flex;align-items:center;gap:12px;padding:4px 0;flex-wrap:wrap}
+.eq-label{color:var(--teal);font-weight:500;min-width:80px;flex-shrink:0;font-family:var(--mono);font-size:.88em}
+.eq-main{color:var(--text);font-family:var(--sans)}
 .eq-comment{color:var(--dimmer);font-style:italic;font-size:.85em;margin-left:auto;padding-left:20px;white-space:nowrap}
 .eq-sep{height:1px;background:var(--border);margin:10px 0}
-.eq-note{font-size:.8em;color:var(--dim);margin-top:8px;font-family:var(--sans);line-height:1.5}
+.eq-note{font-size:.8em;color:var(--dim);margin-top:8px;font-family:var(--sans);line-height:1.6}
 sub,sup{font-size:.72em;line-height:1}
+/* KaTeX in eq-blocks */
+.eq-main .katex,.eq-comment .katex,.eq-note .katex{font-size:1em}
+.eq-main .katex-display{margin:0;text-align:left}
+body.dark-mode .katex{color:inherit}
 
 /* ─── Parameter table ────────────────────────────────────── */
 .param-table{width:100%;border-collapse:collapse;margin:16px 0;font-size:.85em}
@@ -102,7 +106,7 @@ sub,sup{font-size:.72em;line-height:1}
 .sim-status .dot.running{background:#4ade80}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
 
-.sim-body{display:grid;grid-template-columns:390px 1fr;height:720px;overflow:hidden}
+.sim-body{display:grid;grid-template-columns:390px 1fr;height:900px;overflow:hidden}
 
 /* Controls panel */
 .sim-controls{padding:14px 16px 16px;border-right:1px solid var(--border);background:var(--bg3);overflow-y:auto;overflow-x:hidden;height:100%;box-sizing:border-box;scrollbar-width:thin;scrollbar-color:var(--border2) transparent}
