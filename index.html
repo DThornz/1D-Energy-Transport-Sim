@@ -351,8 +351,8 @@
           <span class="ctrl-label-txt">α  <span class="ctrl-unit">m² s⁻¹</span></span>
           <input type="number" class="ctrl-num" id="alpha" value="1e-4" step="1e-6" min="1e-12" max="1">
         </div>
-        <!-- k always visible (needed for Neumann flux BCs) -->
-        <div class="ctrl-row">
+        <!-- k always visible in k/ρ/cₚ mode; in α mode only shown if a Neumann BC is active -->
+        <div class="ctrl-row" id="rowK">
           <span class="ctrl-label-txt">k  <span class="ctrl-unit">W m⁻¹K⁻¹</span></span>
           <input type="number" class="ctrl-num" id="kCond" value="200" step="1" min="0.001" max="10000">
         </div>
@@ -1192,7 +1192,9 @@ elNpts.addEventListener('input', onGridChange);
 
 function updateMatMode() {
   const isAlpha = elMatMode.value === 'alpha';
+  const needsK  = elBcLType.value === 'neumann' || elBcRType.value === 'neumann';
   document.getElementById('rowAlpha').style.display     = isAlpha ? '' : 'none';
+  document.getElementById('rowK').style.display         = (!isAlpha || needsK) ? '' : 'none';
   document.getElementById('rowRho').style.display       = isAlpha ? 'none' : '';
   document.getElementById('rowCp').style.display        = isAlpha ? 'none' : '';
   document.getElementById('rowAlphaComp').style.display = isAlpha ? 'none' : '';
@@ -1213,6 +1215,7 @@ function onMaterialChange() {
 
 function onBCChange() {
   readUI(); enforceBCs();
+  updateMatMode();
   Tss = null; showSS = false;
   elBcLUnit.textContent = bcLType === 'dirichlet' ? 'K' : 'W m⁻²';
   elBcRUnit.textContent = bcRType === 'dirichlet' ? 'K' : 'W m⁻²';
