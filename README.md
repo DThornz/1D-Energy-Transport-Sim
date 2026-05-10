@@ -41,7 +41,7 @@ In one spatial dimension the Laplacian takes the following coordinate-specific f
 ### Boundary Conditions
 
 - **Dirichlet** — prescribed temperature: T|_Γ = T_w
-- **Neumann** — prescribed heat flux: −k (∂T/∂n)|_Γ = q (W m⁻²; q > 0 out of domain at right, into domain at left)
+- **Neumann** — prescribed heat flux: −k (∂T/∂n)|_Γ = q (W mm⁻²; q > 0 out of domain at right, into domain at left)
 - **Symmetry** — Neumann q = 0 is automatically applied at r = 0 for all radial geometries (cylindrical and spherical) to satisfy the physical symmetry condition ∂T/∂r|_{r=0} = 0
 
 ### Numerical Method
@@ -80,7 +80,7 @@ Open `index.html` in any modern web browser. No build step or server required.
 | **Coordinate System** | Switch between Cartesian, cylindrical (radial or axial), and spherical |
 | **Length / Grid points** | Set domain size and spatial resolution |
 | **α, k, ρ, cₚ** | Material thermal properties (α overrides the computed value only if changed independently) |
-| **BC Type + Value** | Dirichlet (K) or Neumann (W m⁻²) at each boundary |
+| **BC Type + Value** | Dirichlet (°C) or Neumann (W mm⁻²) at each boundary |
 | **T₀** | Uniform initial temperature |
 | **Δt** | Requested time step (automatically capped at the stability limit) |
 | **Run / Pause** | Start or pause the simulation |
@@ -115,6 +115,12 @@ LICENSE.md   — research use only license
 3. Crank, J. (1975). *The Mathematics of Diffusion* (2nd ed.). Oxford University Press.
 4. LeVeque, R.J. (2007). *Finite Difference Methods for Ordinary and Partial Differential Equations*. SIAM.
 5. Ozisik, M.N. (1993). *Heat Conduction* (2nd ed.). Wiley.
+
+---
+
+## Author
+
+**Asad Mirza** ([@DThornz](https://github.com/DThornz)) — [portfolio](https://dthornz.github.io/website-cv-tools/)
 
 ---
 
