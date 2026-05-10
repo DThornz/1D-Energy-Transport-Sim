@@ -817,7 +817,7 @@ function solveSS() {
     else { b[0]=-2; c[0]=2; d[0]=-2*dx*bcLVal/kCond; }
     // Right
     if (bcRType === 'dirichlet') { a[n-1]=0; b[n-1]=1; d[n-1]=bcRVal; }
-    else { a[n-1]=2; b[n-1]=-2; d[n-1]=-2*dx*bcRVal/kCond; }
+    else { a[n-1]=2; b[n-1]=-2; d[n-1]=2*dx*bcRVal/kCond; }
 
   } else if (coordSys === 'cylindrical' && cylMode === 'radial') {
     for (let i = 1; i < n-1; i++) {
